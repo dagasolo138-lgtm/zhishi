@@ -12,6 +12,7 @@ const state = {
   categoryNames: new Map(),
   searchTimer: null,
   refreshTimer: null,
+  statsTimer: null,
   refreshSequence: 0
 };
 
@@ -218,6 +219,19 @@ function scheduleFactRefresh(delay = 0) {
   }, delay);
 }
 
+function scheduleStatsRefresh(delay = 0) {
+  if (state.statsTimer !== null) {
+    window.clearTimeout(state.statsTimer);
+  }
+
+  state.statsTimer = window.setTimeout(() => {
+    state.statsTimer = null;
+    renderStats().catch((error) => {
+      setStatus(`统计更新失败：${error instanceof Error ? error.message : String(error)}`, "error");
+    });
+  }, delay);
+}
+
 function createCategoryOption(value, label) {
   const option = document.createElement("option");
   option.value = value;
@@ -366,12 +380,12 @@ function handleGeneratorStatus(event) {
 function bindRuntimeEvents() {
   window.addEventListener("fact:new", () => {
     scheduleFactRefresh(80);
-    renderStats().catch((error) => setStatus(`统计更新失败：${error instanceof Error ? error.message : String(error)}`, "error"));
+    scheduleStatsRefresh(80);
   });
 
   window.addEventListener("facts:cleared", () => {
     scheduleFactRefresh();
-    renderStats().catch((error) => setStatus(`统计更新失败：${error instanceof Error ? error.message : String(error)}`, "error"));
+    scheduleStatsRefresh();
   });
 
   window.addEventListener("settings:changed", () => {
