@@ -1,12 +1,26 @@
 import { exportJSON, exportMarkdown } from "./exporter.js";
-import { getFactStats, getFacts } from "./storage.js";
+import { getFacts } from "./storage.js";
+import {
+  renderEmptyState,
+  renderFactCards as renderFactCardsCore
+} from "./ui-cards.js";
+import {
+  handleGeneratorStatus,
+  renderStats as renderStatsCore,
+  setLastGenerated,
+  setStatus
+} from "./ui-stats.js";
+
+export { createFactCard, renderEmptyState, renderFactCards } from "./ui-cards.js";
+export { handleGeneratorStatus, setLastGenerated, setStatus } from "./ui-stats.js";
+export { initTabs } from "./ui-tabs.js";
 
 const CATEGORIES_URL = new URL("../data/categories.json", import.meta.url);
 const CUSTOM_CATEGORIES_KEY = "zhishi_custom_categories";
 const SEARCH_DEBOUNCE_MS = 180;
 const FACTS_RENDER_LIMIT = 300;
 
-const state = {
+export const state = {
   initialized: false,
   categories: [],
   categoryNames: new Map(),
@@ -59,149 +73,6 @@ async function loadCategories() {
   return categories;
 }
 
-function parseDate(timestamp) {
-  const numericTimestamp = Number(timestamp);
-
-  if (!Number.isFinite(numericTimestamp)) {
-    return null;
-  }
-
-  const date = new Date(numericTimestamp);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
-function formatDate(timestamp) {
-  const date = parseDate(timestamp);
-
-  if (!date) {
-    return "时间未知";
-  }
-
-  return new Intl.DateTimeFormat("zh-CN", {
-    dateStyle: "medium",
-    timeStyle: "medium"
-  }).format(date);
-}
-
-function categoryName(categoryId) {
-  return state.categoryNames.get(categoryId) || categoryId || "未分类";
-}
-
-function createTextElement(tagName, className, text) {
-  const node = document.createElement(tagName);
-  if (className) {
-    node.className = className;
-  }
-  node.textContent = text;
-  return node;
-}
-
-function createDetailRow(label, value) {
-  const row = document.createElement("div");
-  const labelNode = createTextElement("span", "fact-card__detail-label", label);
-  const valueNode = createTextElement("span", "fact-card__detail-value", value);
-
-  row.className = "fact-card__detail-row";
-  row.append(labelNode, valueNode);
-  return row;
-}
-
-function createFactCard(fact) {
-  const card = document.createElement("article");
-  const header = document.createElement("header");
-  const categoryBadge = createTextElement(
-    "span",
-    `category-badge category-badge--${fact.category || "uncategorized"}`,
-    categoryName(fact.category)
-  );
-  const subcategory = createTextElement("span", "fact-card__subcategory", fact.subcategory || "未分类");
-
-  if (fact.leaf) {
-    subcategory.append(
-      document.createTextNode(" › "),
-      createTextElement("span", "fact-card__leaf", fact.leaf)
-    );
-  }
-  const body = createTextElement("p", "fact-card__body", fact.fact || "");
-  const footer = document.createElement("footer");
-  const detail = document.createElement("div");
-  const source = createTextElement("span", "fact-card__source", fact.source_hint || "来源提示缺失");
-  const scoreValue = Number(fact.quality_score);
-  const score = Number.isInteger(scoreValue) && scoreValue >= 5
-    ? createTextElement("span", "fact-card__score", `★ ${scoreValue} / 10`)
-    : null;
-  const time = createTextElement("time", "fact-card__time", formatDate(fact.timestamp));
-
-  if (score) {
-    score.dataset.score = scoreValue >= 8 ? "high" : "mid";
-  }
-  const timestampDate = parseDate(fact.timestamp);
-  const fullGeneratedTime = timestampDate ? timestampDate.toISOString() : "时间未知";
-  const shortId = fact.id ? String(fact.id).slice(-6) : "未知";
-
-  card.className = "fact-card";
-  card.dataset.factId = fact.id || "";
-  card.addEventListener("click", () => {
-    card.classList.toggle("fact-card--expanded");
-  });
-
-  if (timestampDate) {
-    time.dateTime = timestampDate.toISOString();
-  }
-
-  header.className = "fact-card__header";
-  header.append(categoryBadge, subcategory);
-
-  footer.className = "fact-card__footer";
-  footer.append(...[source, score, time].filter(Boolean));
-
-  detail.className = "fact-card__detail";
-  detail.append(createDetailRow("来源", fact.source_hint || "来源提示缺失"));
-
-  if (fact.leaf) {
-    detail.append(createDetailRow("细分类", fact.leaf));
-  }
-
-  detail.append(
-    createDetailRow("质量评分", Number.isInteger(scoreValue) ? `★ ${scoreValue} / 10` : "未评分"),
-    createDetailRow("生成时间", fullGeneratedTime),
-    createDetailRow("条目 ID", shortId)
-  );
-
-  card.append(header, body, footer, detail);
-  return card;
-}
-
-function renderEmptyState(message = "还没有符合条件的事实。") {
-  const grid = requiredElement("#facts-grid");
-  const empty = createTextElement("p", "facts-empty", message);
-  grid.replaceChildren(empty);
-}
-
-function renderFactCards(facts) {
-  const grid = requiredElement("#facts-grid");
-
-  if (!facts.length) {
-    renderEmptyState();
-    return;
-  }
-
-  const fragment = document.createDocumentFragment();
-  facts.forEach((fact) => fragment.appendChild(createFactCard(fact)));
-
-  if (facts.length >= FACTS_RENDER_LIMIT) {
-    const limitHint = createTextElement(
-      "p",
-      "facts-limit-hint",
-      "仅显示最新 300 条，导出可获取全量数据"
-    );
-    limitHint.style.cssText = "break-inside: avoid; margin: 4px 0 16px; color: #737373; font-size: 12px; line-height: 1.6;";
-    fragment.appendChild(limitHint);
-  }
-
-  grid.replaceChildren(fragment);
-}
-
 function currentQuery() {
   const searchInput = element("#search-input");
   const categoryFilter = element("#category-filter");
@@ -212,24 +83,7 @@ function currentQuery() {
   };
 }
 
-function setStatus(message, kind = "idle") {
-  const statusText = element("#status-text");
-
-  if (statusText) {
-    statusText.textContent = message;
-    statusText.dataset.status = kind;
-  }
-}
-
-function setLastGenerated(timestamp) {
-  const lastGenerated = element("#last-generated");
-
-  if (lastGenerated) {
-    lastGenerated.textContent = timestamp ? formatDate(timestamp) : "尚未生成";
-  }
-}
-
-async function refreshFacts() {
+export async function refreshFacts() {
   const requestId = ++state.refreshSequence;
   const { category, keyword } = currentQuery();
 
@@ -240,7 +94,7 @@ async function refreshFacts() {
       return;
     }
 
-    renderFactCards(facts);
+    renderFactCardsCore(facts, { categoryNames: state.categoryNames });
   } catch (error) {
     if (requestId !== state.refreshSequence) {
       return;
@@ -252,7 +106,7 @@ async function refreshFacts() {
   }
 }
 
-function scheduleFactRefresh(delay = 0) {
+export function scheduleFactRefresh(delay = 0) {
   if (state.refreshTimer !== null) {
     window.clearTimeout(state.refreshTimer);
   }
@@ -337,40 +191,8 @@ export async function renderFilter() {
  * Render total facts and per-category counts.
  */
 export async function renderStats() {
-  const [{ total: factTotal, counts }, categories] = await Promise.all([getFactStats(), loadCategories()]);
-  const total = element("#stats-total");
-  const categoryStats = element("#category-stats");
-
-  if (total) {
-    total.textContent = `共 ${factTotal} 条事实`;
-  }
-
-  if (!categoryStats) {
-    return;
-  }
-
-  const knownCategoryIds = new Set(categories.map((category) => category.id));
-  const displayCategories = [
-    ...categories.map((category) => ({ id: category.id, name: category.name })),
-    ...[...counts.keys()]
-      .filter((categoryId) => !knownCategoryIds.has(categoryId))
-      .sort()
-      .map((categoryId) => ({ id: categoryId, name: categoryName(categoryId) }))
-  ];
-  const fragment = document.createDocumentFragment();
-
-  displayCategories.forEach((category) => {
-    const item = document.createElement("span");
-    item.className = "category-count";
-    item.title = `${category.name}：${counts.get(category.id) || 0} 条`;
-    item.append(
-      createTextElement("span", `category-badge category-badge--${category.id}`, category.name),
-      createTextElement("strong", "category-count__value", String(counts.get(category.id) || 0))
-    );
-    fragment.appendChild(item);
-  });
-
-  categoryStats.replaceChildren(fragment);
+  const categories = await loadCategories();
+  return renderStatsCore({ categories, categoryNames: state.categoryNames });
 }
 
 async function runExport(button, action, successMessage) {
@@ -410,18 +232,7 @@ export function renderExportButtons() {
   }
 }
 
-function handleGeneratorStatus(event) {
-  const detail = event.detail || {};
-  const message = detail.message || "生成器状态已更新";
-
-  setStatus(message, detail.status || "idle");
-
-  if (detail.status === "completed" && Number(detail.savedCount) > 0) {
-    setLastGenerated(detail.timestamp || Date.now());
-  }
-}
-
-function bindRuntimeEvents() {
+export function bindRuntimeEvents() {
   window.addEventListener("fact:new", () => {
     scheduleFactRefresh(80);
     scheduleStatsRefresh(80);

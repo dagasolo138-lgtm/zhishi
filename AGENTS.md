@@ -21,7 +21,10 @@ zhishi 是一个纯静态 GitHub Pages 应用，无后端服务。
 - `js/storage.js`：IndexedDB 封装。
 - `js/prompt.js`：prompt 模板。
 - `js/validator.js`：模型输出校验。
-- `js/ui.js`：主界面渲染。
+- `js/ui.js`：主界面入口转发、初始化、搜索、筛选、导出绑定与运行时事件编排。
+- `js/ui-cards.js`：事实卡片渲染与空状态渲染。
+- `js/ui-stats.js`：统计栏、状态栏与生成器状态渲染。
+- `js/ui-tabs.js`：Tab 切换逻辑预留模块。
 - `js/exporter.js`：导出功能。
 - `js/api.js`：DeepSeek SSE 调用。
 - `js/app.js`：应用启动、初始化与模块编排。
