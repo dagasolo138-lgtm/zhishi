@@ -1,6 +1,6 @@
 const API_URL = "https://api.deepseek.com/chat/completions";
 const API_KEY_STORAGE_KEY = "zhishi_deepseek_api_key";
-const MODEL = "deepseek-chat";
+const MODEL = "deepseek-v4-flash";
 
 function requiredText(value, fieldName) {
   if (typeof value !== "string" || !value.trim()) {
@@ -94,7 +94,7 @@ export async function streamGenerate({
     const apiKey = (localStorage.getItem(API_KEY_STORAGE_KEY) || "").trim();
 
     if (!apiKey) {
-      throw new Error("未配置 DeepSeek API Key，请先在设置面板保存 API Key。 ");
+      throw new Error("未配置 DeepSeek API Key，请先在设置面板保存 API Key。");
     }
 
     const response = await fetch(API_URL, {
@@ -107,6 +107,7 @@ export async function streamGenerate({
       body: JSON.stringify({
         model: MODEL,
         stream: true,
+        thinking: { type: "disabled" },
         temperature: 0.2,
         max_tokens: 4096,
         messages: [
@@ -121,7 +122,7 @@ export async function streamGenerate({
     }
 
     if (!response.body) {
-      throw new Error("浏览器未提供可读取的流式响应。 ");
+      throw new Error("浏览器未提供可读取的流式响应。");
     }
 
     const reader = response.body.getReader();
@@ -168,7 +169,7 @@ export async function streamGenerate({
     }
 
     if (!fullText.trim()) {
-      throw new Error("DeepSeek 未返回可用文本。 ");
+      throw new Error("DeepSeek 未返回可用文本。");
     }
 
     callSafely(onDone, fullText);
