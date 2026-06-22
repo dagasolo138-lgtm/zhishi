@@ -68,7 +68,7 @@ select:focus-visible {
 .app-shell {
   width: min(1480px, calc(100% - 32px));
   margin: 0 auto;
-  padding: 184px 0 82px;
+  padding: 112px 0 32px;
 }
 
 .topbar {
@@ -84,7 +84,7 @@ select:focus-visible {
 
 .topbar__inner {
   display: grid;
-  grid-template-columns: minmax(150px, 0.8fr) minmax(300px, 1.8fr) auto;
+  grid-template-columns: minmax(220px, 1fr) auto;
   gap: 18px;
   align-items: center;
   width: min(1480px, calc(100% - 32px));
@@ -112,6 +112,58 @@ select:focus-visible {
   font-size: 12px;
 }
 
+.brand__status {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+#status-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--dim);
+  margin-right: 5px;
+  vertical-align: middle;
+  transition: background 300ms;
+}
+
+#status-dot[data-status="generating"],
+#status-dot[data-status="streaming"],
+#status-dot[data-status="working"] {
+  background: #9acbff;
+}
+
+#status-dot[data-status="completed"],
+#status-dot[data-status="success"] {
+  background: var(--success);
+}
+
+#status-dot[data-status="error"] {
+  background: var(--danger);
+}
+
+#status-dot[data-status="waiting"] {
+  background: var(--warning);
+}
+
+#status-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#status-text[data-status="error"] { color: #ff9a9a; }
+#status-text[data-status="completed"],
+#status-text[data-status="success"] { color: var(--success); }
+#status-text[data-status="generating"],
+#status-text[data-status="streaming"],
+#status-text[data-status="working"] { color: #9acbff; }
+#status-text[data-status="waiting"] { color: var(--warning); }
+
 .toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -138,7 +190,6 @@ select:focus-visible {
 .input,
 .select,
 #search-input,
-#category-filter,
 #api-key-input {
   width: 100%;
   min-height: 42px;
@@ -160,8 +211,7 @@ select:focus-visible {
   padding-left: 29px;
 }
 
-.select,
-#category-filter {
+.select {
   min-width: 136px;
   padding: 0 32px 0 12px;
 }
@@ -175,7 +225,6 @@ select:focus-visible {
 .input:hover,
 .select:hover,
 #search-input:hover,
-#category-filter:hover,
 #api-key-input:hover {
   border-color: var(--line-strong);
 }
@@ -183,7 +232,6 @@ select:focus-visible {
 .input:focus,
 .select:focus,
 #search-input:focus,
-#category-filter:focus,
 #api-key-input:focus {
   border-color: var(--text);
   background: #191919;
@@ -256,6 +304,88 @@ select:focus-visible {
   color: var(--muted);
   content: "设置";
   font-size: 12px;
+}
+
+.tab-bar {
+  display: flex;
+  overflow-x: auto;
+  gap: 4px;
+  padding: 0;
+  border-bottom: 1px solid var(--line);
+  scrollbar-width: none;
+}
+
+.tab-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.tab-item {
+  flex: 0 0 auto;
+  padding: 8px 16px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 150ms, border-color 150ms;
+}
+
+.tab-item:hover {
+  color: var(--text);
+}
+
+.tab-item.active {
+  color: var(--text);
+  border-bottom-color: var(--text);
+}
+
+.subtab-bar {
+  display: flex;
+  overflow-x: auto;
+  gap: 6px;
+  padding: 10px 0;
+  scrollbar-width: none;
+  min-height: 44px;
+}
+
+.subtab-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.subtab-item {
+  flex: 0 0 auto;
+  padding: 4px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: none;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 150ms;
+}
+
+.subtab-item:hover {
+  border-color: var(--line-strong);
+  color: var(--text);
+}
+
+.subtab-item.active {
+  border-color: var(--text);
+  color: var(--text);
+  background: rgba(255,255,255,0.05);
+}
+
+#graph-container {
+  display: none;
+  width: 100%;
+  height: calc(100vh - 200px);
+}
+
+#graph-container:not([hidden]) {
+  display: block;
 }
 
 .stats-panel {
@@ -465,54 +595,6 @@ select:focus-visible {
   text-align: center;
 }
 
-.statusbar {
-  position: fixed;
-  z-index: 18;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  border-top: 1px solid var(--line);
-  background: rgba(13, 13, 13, 0.94);
-  backdrop-filter: blur(16px);
-}
-
-.statusbar__inner {
-  display: flex;
-  gap: 12px 24px;
-  align-items: center;
-  justify-content: space-between;
-  width: min(1480px, calc(100% - 32px));
-  min-height: 48px;
-  margin: 0 auto;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.statusbar__item {
-  display: inline-flex;
-  gap: 7px;
-  align-items: center;
-  min-width: 0;
-}
-
-.statusbar__label {
-  color: var(--dim);
-}
-
-#status-text {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-#status-text[data-status="error"] { color: #ff9a9a; }
-#status-text[data-status="completed"],
-#status-text[data-status="success"] { color: var(--success); }
-#status-text[data-status="generating"],
-#status-text[data-status="streaming"],
-#status-text[data-status="working"] { color: #9acbff; }
-#status-text[data-status="waiting"] { color: var(--warning); }
-
 .settings-panel {
   position: fixed;
   z-index: 50;
@@ -613,7 +695,7 @@ select:focus-visible {
   }
 
   .app-shell {
-    padding-top: 228px;
+    padding-top: 154px;
   }
 
   #facts-grid {
@@ -623,8 +705,7 @@ select:focus-visible {
 
 @media (max-width: 840px) {
   .app-shell,
-  .topbar__inner,
-  .statusbar__inner {
+  .topbar__inner {
     width: min(100% - 24px, 1480px);
   }
 
@@ -647,7 +728,7 @@ select:focus-visible {
   }
 
   .app-shell {
-    padding-top: 230px;
+    padding-top: 170px;
   }
 
   #facts-grid {
@@ -661,7 +742,7 @@ select:focus-visible {
   }
 
   .app-shell {
-    padding-top: 258px;
+    padding-top: 214px;
   }
 
   .brand {
@@ -671,11 +752,6 @@ select:focus-visible {
 
   .toolbar {
     gap: 8px;
-  }
-
-  #category-filter {
-    flex: 1 1 130px;
-    min-width: 0;
   }
 
   .toolbar .button {
@@ -695,15 +771,6 @@ select:focus-visible {
     align-items: flex-start;
     flex-direction: column;
     gap: 5px;
-  }
-
-  .statusbar__inner {
-    gap: 3px;
-    align-items: flex-start;
-    flex-direction: column;
-    justify-content: center;
-    min-height: 58px;
-    padding: 6px 0;
   }
 
   .settings-actions {

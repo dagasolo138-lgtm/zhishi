@@ -4,30 +4,6 @@ function element(selector) {
   return document.querySelector(selector);
 }
 
-function parseDate(timestamp) {
-  const numericTimestamp = Number(timestamp);
-
-  if (!Number.isFinite(numericTimestamp)) {
-    return null;
-  }
-
-  const date = new Date(numericTimestamp);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
-function formatDate(timestamp) {
-  const date = parseDate(timestamp);
-
-  if (!date) {
-    return "时间未知";
-  }
-
-  return new Intl.DateTimeFormat("zh-CN", {
-    dateStyle: "medium",
-    timeStyle: "medium"
-  }).format(date);
-}
-
 function categoryName(categoryId, categoryNames = new Map()) {
   return categoryNames.get(categoryId) || categoryId || "未分类";
 }
@@ -85,19 +61,16 @@ export async function renderStats({ categories = [], categoryNames = new Map() }
 }
 
 export function setStatus(message, kind = "idle") {
+  const statusDot = element("#status-dot");
   const statusText = element("#status-text");
+
+  if (statusDot) {
+    statusDot.dataset.status = kind;
+  }
 
   if (statusText) {
     statusText.textContent = message;
     statusText.dataset.status = kind;
-  }
-}
-
-export function setLastGenerated(timestamp) {
-  const lastGenerated = element("#last-generated");
-
-  if (lastGenerated) {
-    lastGenerated.textContent = timestamp ? formatDate(timestamp) : "尚未生成";
   }
 }
 
@@ -106,8 +79,4 @@ export function handleGeneratorStatus(event) {
   const message = detail.message || "生成器状态已更新";
 
   setStatus(message, detail.status || "idle");
-
-  if (detail.status === "completed" && Number(detail.savedCount) > 0) {
-    setLastGenerated(detail.timestamp || Date.now());
-  }
 }

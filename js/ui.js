@@ -1,5 +1,6 @@
 import { exportJSON, exportMarkdown } from "./exporter.js";
 import { getFacts } from "./storage.js";
+import { getCurrentTabQuery, initTabs, switchTab } from "./ui-tabs.js";
 import {
   renderEmptyState,
   renderFactCards as renderFactCardsCore
@@ -7,13 +8,12 @@ import {
 import {
   handleGeneratorStatus,
   renderStats as renderStatsCore,
-  setLastGenerated,
   setStatus
 } from "./ui-stats.js";
 
 export { createFactCard, renderEmptyState, renderFactCards } from "./ui-cards.js";
-export { handleGeneratorStatus, setLastGenerated, setStatus } from "./ui-stats.js";
-export { initTabs } from "./ui-tabs.js";
+export { handleGeneratorStatus, setStatus } from "./ui-stats.js";
+export { initTabs, switchTab } from "./ui-tabs.js";
 
 const CATEGORIES_URL = new URL("../data/categories.json", import.meta.url);
 const CUSTOM_CATEGORIES_KEY = "zhishi_custom_categories";
@@ -75,17 +75,23 @@ async function loadCategories() {
 
 function currentQuery() {
   const searchInput = element("#search-input");
-  const categoryFilter = element("#category-filter");
+  const tabQuery = getCurrentTabQuery();
+  const searchKeyword = searchInput?.value.trim() || "";
+  const tabKeyword = tabQuery.keyword || "";
 
   return {
-    keyword: searchInput?.value.trim() || "",
-    category: categoryFilter?.value || ""
+    category: tabQuery.category || "",
+    keyword: [searchKeyword, tabKeyword].filter(Boolean).join(" ")
   };
 }
 
-export async function refreshFacts() {
+export async function refreshFacts(query = {}) {
   const requestId = ++state.refreshSequence;
-  const { category, keyword } = currentQuery();
+  const current = currentQuery();
+  const category = Object.hasOwn(query, "category") ? query.category || "" : current.category;
+  const keyword = Object.hasOwn(query, "keyword")
+    ? [element("#search-input")?.value.trim() || "", query.keyword || ""].filter(Boolean).join(" ")
+    : current.keyword;
 
   try {
     const facts = await getFacts({ category, keyword, limit: FACTS_RENDER_LIMIT });
@@ -130,13 +136,6 @@ function scheduleStatsRefresh(delay = 0) {
   }, delay);
 }
 
-function createCategoryOption(value, label) {
-  const option = document.createElement("option");
-  option.value = value;
-  option.textContent = label;
-  return option;
-}
-
 /**
  * Attach live IndexedDB-backed filtering to the search input.
  */
@@ -162,30 +161,10 @@ export function renderSearch() {
 }
 
 /**
- * Populate and attach the category selector.
+ * Category filtering is now driven by the tab bar. Kept as a no-op for callers
+ * that refresh settings and expect the previous filter setup hook to exist.
  */
-export async function renderFilter() {
-  const filter = requiredElement("#category-filter");
-  const categories = await loadCategories();
-  const selectedValue = filter.value;
-  const fragment = document.createDocumentFragment();
-
-  fragment.appendChild(createCategoryOption("", "全部分类"));
-  categories.forEach((category) => {
-    fragment.appendChild(createCategoryOption(category.id, category.name));
-  });
-
-  filter.replaceChildren(fragment);
-  filter.value = [...filter.options].some((option) => option.value === selectedValue)
-    ? selectedValue
-    : "";
-  filter.dataset.populated = "true";
-
-  if (filter.dataset.bound !== "true") {
-    filter.addEventListener("change", () => refreshFacts());
-    filter.dataset.bound = "true";
-  }
-}
+export async function renderFilter() {}
 
 /**
  * Render total facts and per-category counts.
@@ -246,8 +225,10 @@ export function bindRuntimeEvents() {
   window.addEventListener("settings:changed", () => {
     (async () => {
       try {
-        await renderFilter();
-        await Promise.all([refreshFacts(), renderStats()]);
+        const categories = await loadCategories();
+        initTabs(categories);
+        switchTab("all");
+        await renderStats();
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         setStatus(`设置更新失败：${message}`, "error");
@@ -268,14 +249,14 @@ export async function init() {
     return;
   }
 
-  await loadCategories();
+  const categories = await loadCategories();
   renderSearch();
-  await renderFilter();
+  initTabs(categories);
   renderExportButtons();
   bindRuntimeEvents();
 
-  await Promise.all([refreshFacts(), renderStats()]);
+  switchTab("all");
+  await renderStats();
   setStatus("等待生成任务启动", "idle");
-  setLastGenerated(null);
   state.initialized = true;
 }
