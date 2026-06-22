@@ -1,6 +1,5 @@
 import { getFacts, getAllFacts } from "./storage.js";
-
-const FACTS_RENDER_LIMIT = 300;
+import { FACTS_RENDER_LIMIT } from "./ui.js";
 
 function requiredElement(selector) {
   const found = document.querySelector(selector);
