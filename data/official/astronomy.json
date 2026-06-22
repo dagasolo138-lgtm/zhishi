@@ -1,0 +1,56 @@
+{
+  "category": "astronomy",
+  "name": "天文",
+  "facts": [
+    {
+      "fact": "太阳是太阳系中质量最大的天体。",
+      "subcategory": "天文学",
+      "source_hint": "天文学教材"
+    },
+    {
+      "fact": "地球绕太阳公转一周的平均时间约为365.24天。",
+      "subcategory": "天文学",
+      "source_hint": "天文学教材"
+    },
+    {
+      "fact": "银河系属于包含数千亿颗恒星的棒旋星系。",
+      "subcategory": "天文学",
+      "source_hint": "天文学教材"
+    },
+    {
+      "fact": "月球始终以同一面朝向地球，这种现象称为潮汐锁定。",
+      "subcategory": "天文学",
+      "source_hint": "天文学教材"
+    },
+    {
+      "fact": "水星是太阳系中距离太阳最近的行星。",
+      "subcategory": "天文学",
+      "source_hint": "天文学教材"
+    },
+    {
+      "fact": "木星是太阳系中体积最大的行星。",
+      "subcategory": "天文学",
+      "source_hint": "天文学教材"
+    },
+    {
+      "fact": "火星拥有奥林帕斯山这座巨型盾状火山。",
+      "subcategory": "天文学",
+      "source_hint": "天文学教材"
+    },
+    {
+      "fact": "金星的自转方向与地球相反。",
+      "subcategory": "天文学",
+      "source_hint": "天文学教材"
+    },
+    {
+      "fact": "哈雷彗星的轨道周期为75至76年。",
+      "subcategory": "天文学",
+      "source_hint": "天文学教材"
+    },
+    {
+      "fact": "国际天文学联合会在2006年将冥王星归为矮行星。",
+      "subcategory": "天文学",
+      "source_hint": "天文学教材"
+    }
+  ]
+}

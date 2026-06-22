@@ -1,0 +1,56 @@
+{
+  "category": "biology",
+  "name": "生物",
+  "facts": [
+    {
+      "fact": "DNA分子通常以双螺旋结构储存遗传信息。",
+      "subcategory": "基础生物学",
+      "source_hint": "基础生物学教材"
+    },
+    {
+      "fact": "细胞膜通过磷脂双分子层将细胞内部与外部环境分隔。",
+      "subcategory": "基础生物学",
+      "source_hint": "基础生物学教材"
+    },
+    {
+      "fact": "光合作用使绿色植物利用光能合成有机物。",
+      "subcategory": "基础生物学",
+      "source_hint": "基础生物学教材"
+    },
+    {
+      "fact": "人体血液中的红细胞主要负责运输氧气。",
+      "subcategory": "基础生物学",
+      "source_hint": "基础生物学教材"
+    },
+    {
+      "fact": "线粒体通过细胞呼吸为真核细胞提供能量。",
+      "subcategory": "基础生物学",
+      "source_hint": "基础生物学教材"
+    },
+    {
+      "fact": "核糖体是细胞内合成蛋白质的主要场所。",
+      "subcategory": "基础生物学",
+      "source_hint": "基础生物学教材"
+    },
+    {
+      "fact": "叶绿体含有叶绿素，参与植物光合作用。",
+      "subcategory": "基础生物学",
+      "source_hint": "基础生物学教材"
+    },
+    {
+      "fact": "人体共有23对染色体。",
+      "subcategory": "基础生物学",
+      "source_hint": "基础生物学教材"
+    },
+    {
+      "fact": "抗体由B细胞分化形成的浆细胞产生。",
+      "subcategory": "基础生物学",
+      "source_hint": "基础生物学教材"
+    },
+    {
+      "fact": "减数分裂产生含单套染色体的配子。",
+      "subcategory": "基础生物学",
+      "source_hint": "基础生物学教材"
+    }
+  ]
+}

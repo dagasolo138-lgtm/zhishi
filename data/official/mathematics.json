@@ -1,0 +1,56 @@
+{
+  "category": "mathematics",
+  "name": "数学",
+  "facts": [
+    {
+      "fact": "质数是大于1且只有1和自身两个正因数的整数。",
+      "subcategory": "数学基础",
+      "source_hint": "数学教材"
+    },
+    {
+      "fact": "直角三角形两条直角边平方和等于斜边平方。",
+      "subcategory": "数学基础",
+      "source_hint": "数学教材"
+    },
+    {
+      "fact": "圆周率定义为圆的周长与直径之比。",
+      "subcategory": "数学基础",
+      "source_hint": "数学教材"
+    },
+    {
+      "fact": "概率的取值范围从0到1。",
+      "subcategory": "数学基础",
+      "source_hint": "数学教材"
+    },
+    {
+      "fact": "零既不是正数，也不是负数。",
+      "subcategory": "数学基础",
+      "source_hint": "数学教材"
+    },
+    {
+      "fact": "欧几里得几何以公理体系研究平面和空间图形。",
+      "subcategory": "数学基础",
+      "source_hint": "数学教材"
+    },
+    {
+      "fact": "斐波那契数列从第三项起等于前两项之和。",
+      "subcategory": "数学基础",
+      "source_hint": "数学教材"
+    },
+    {
+      "fact": "自然数集合在加法和乘法下封闭。",
+      "subcategory": "数学基础",
+      "source_hint": "数学教材"
+    },
+    {
+      "fact": "矩阵乘法一般不满足交换律。",
+      "subcategory": "数学基础",
+      "source_hint": "数学教材"
+    },
+    {
+      "fact": "微积分研究函数的变化率和累积量。",
+      "subcategory": "数学基础",
+      "source_hint": "数学教材"
+    }
+  ]
+}

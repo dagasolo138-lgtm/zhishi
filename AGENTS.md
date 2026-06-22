@@ -14,11 +14,16 @@ zhishi 是一个纯静态 GitHub Pages 应用，无后端服务。
 - `css/style.css`：全局样式与组件样式。
 - `data/categories.json`：内置分类配置。
 - `data/facts_seed.json`：内置种子事实。
+- `data/official/index.json`：官方知识库文件索引。
+- `data/official/*.json`：按分类拆分的官方知识库事实文件。
+- `data/backend/`：后台知识库预留目录。
 - `js/settings-store.js`：`localStorage` 读写。
 - `js/settings-ui.js`：设置面板 UI。
 - `js/settings.js`：设置模块对外入口。
 - `js/generator.js`：生成调度，含轮数控制、分类过滤。
 - `js/storage.js`：IndexedDB 封装。
+- `js/official-store.js`：官方知识库加载与页面生命周期缓存。
+- `js/backend-store.js`：后台知识库 IndexedDB store 预留入口。
 - `js/prompt.js`：prompt 模板。
 - `js/validator.js`：模型输出校验。
 - `js/ui.js`：主界面入口转发、初始化、搜索、筛选、导出绑定与运行时事件编排。
@@ -59,6 +64,8 @@ zhishi 是一个纯静态 GitHub Pages 应用，无后端服务。
 - 知识图谱可视化（D3.js 力导向图）。
 - 生成状态指示器（顶部圆点）。
 - 顶部 Tab 导航支持“全部”、动态分类和“图谱”视图，生成状态显示在顶部品牌区。
+- 三层知识库结构：官方知识库按分类静态 JSON 加载，个人知识库存入 IndexedDB 的 `facts` store，后台知识库预留独立 `backend_facts` store。
+- 事实列表会合并展示官方与个人事实，官方事实卡片显示 📮 标记。
 
 ## 5. 注意事项
 

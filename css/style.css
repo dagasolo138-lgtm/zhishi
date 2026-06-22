@@ -549,6 +549,13 @@ select:focus-visible {
   font-size: 11px;
 }
 
+.fact-card__official-badge {
+  flex: 0 0 auto;
+  cursor: help;
+  font-size: 13px;
+  line-height: 1;
+}
+
 .fact-card__body {
   margin: 0;
   color: #f1f1f1;
