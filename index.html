@@ -6,24 +6,26 @@
     <meta name="description" content="zhishi：本地优先的结构化客观事实知识库。">
     <meta name="theme-color" content="#0d0d0d">
     <title>zhishi · 本地知识库</title>
-    <link rel="stylesheet" href="css/style.css?v=7">
+    <link rel="stylesheet" href="css/style.css?v=8">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
     <script type="importmap">
       {
         "imports": {
-          "./js/api.js": "./js/api.js?v=7",
-          "./js/app.js": "./js/app.js?v=7",
-          "./js/exporter.js": "./js/exporter.js?v=7",
-          "./js/generator.js": "./js/generator.js?v=7",
-          "./js/prompt.js": "./js/prompt.js?v=7",
-          "./js/settings.js": "./js/settings.js?v=7",
-          "./js/settings-store.js": "./js/settings-store.js?v=7",
-          "./js/settings-ui.js": "./js/settings-ui.js?v=7",
-          "./js/storage.js": "./js/storage.js?v=7",
-          "./js/ui.js": "./js/ui.js?v=7",
-          "./js/ui-cards.js": "./js/ui-cards.js?v=7",
-          "./js/ui-stats.js": "./js/ui-stats.js?v=7",
-          "./js/ui-tabs.js": "./js/ui-tabs.js?v=7",
-          "./js/validator.js": "./js/validator.js?v=7"
+          "./js/api.js": "./js/api.js?v=8",
+          "./js/app.js": "./js/app.js?v=8",
+          "./js/exporter.js": "./js/exporter.js?v=8",
+          "./js/generator.js": "./js/generator.js?v=8",
+          "./js/prompt.js": "./js/prompt.js?v=8",
+          "./js/settings.js": "./js/settings.js?v=8",
+          "./js/settings-store.js": "./js/settings-store.js?v=8",
+          "./js/settings-ui.js": "./js/settings-ui.js?v=8",
+          "./js/storage.js": "./js/storage.js?v=8",
+          "./js/ui.js": "./js/ui.js?v=8",
+          "./js/ui-cards.js": "./js/ui-cards.js?v=8",
+          "./js/ui-stats.js": "./js/ui-stats.js?v=8",
+          "./js/ui-tabs.js": "./js/ui-tabs.js?v=8",
+          "./js/ui-graph.js": "./js/ui-graph.js?v=8",
+          "./js/validator.js": "./js/validator.js?v=8"
         }
       }
     </script>
@@ -83,12 +85,14 @@
         <div id="facts-grid" aria-live="polite" aria-busy="false">
           <p class="facts-empty">正在初始化本地知识库…</p>
         </div>
-        <div id="graph-container" hidden></div>
+        <div id="graph-container" hidden>
+          <svg id="graph-svg" width="100%" height="100%"></svg>
+        </div>
       </section>
     </main>
 
     <div id="settings-panel-host"></div>
 
-    <script type="module" src="js/app.js?v=7"></script>
+    <script type="module" src="js/app.js?v=8"></script>
   </body>
 </html>

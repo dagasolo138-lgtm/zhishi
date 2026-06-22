@@ -380,12 +380,50 @@ select:focus-visible {
 
 #graph-container {
   display: none;
+  position: relative;
   width: 100%;
-  height: calc(100vh - 200px);
+  height: calc(100vh - 220px);
+  background: var(--bg-elevated);
+  border-radius: var(--radius);
+  overflow: hidden;
 }
 
 #graph-container:not([hidden]) {
   display: block;
+}
+
+#graph-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.graph-node {
+  cursor: pointer;
+}
+
+.graph-node:hover circle {
+  filter: brightness(1.3);
+}
+
+.graph-label {
+  font-size: 11px;
+  fill: var(--muted);
+  text-anchor: middle;
+  pointer-events: none;
+  user-select: none;
+}
+
+.graph-count {
+  font-size: 10px;
+  fill: var(--text);
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+}
+
+.graph-link {
+  fill: none;
+  stroke-linecap: round;
 }
 
 .stats-panel {
