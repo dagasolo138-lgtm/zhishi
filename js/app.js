@@ -5,6 +5,7 @@ import * as ui from "./ui.js";
 
 const CATEGORIES_URL = new URL("../data/categories.json", import.meta.url);
 const FACTS_SEED_URL = new URL("../data/facts_seed.json", import.meta.url);
+const SEED_INITIALIZED_STORAGE_KEY = "zhishi_seed_initialized";
 
 const SEED_SOURCE_HINTS = Object.freeze({
   geography: "通用地理教材",
@@ -82,6 +83,11 @@ async function seedFactsIfNeeded() {
   const existingCount = await countFacts();
 
   if (existingCount > 0) {
+    localStorage.setItem(SEED_INITIALIZED_STORAGE_KEY, "true");
+    return 0;
+  }
+
+  if (localStorage.getItem(SEED_INITIALIZED_STORAGE_KEY) === "true") {
     return 0;
   }
 
@@ -103,6 +109,7 @@ async function seedFactsIfNeeded() {
     window.dispatchEvent(new CustomEvent("fact:new", { detail: savedFact }));
   }
 
+  localStorage.setItem(SEED_INITIALIZED_STORAGE_KEY, "true");
   return savedCount;
 }
 
