@@ -1,0 +1,41 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: zhishi-pages-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Publish repository root to gh-pages
+        env:
+          TARGET_BRANCH: gh-pages
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git switch --orphan "$TARGET_BRANCH"
+          git rm -rf . || true
+          git checkout main -- .
+
+          git add --all
+          git commit -m "Deploy ${GITHUB_SHA}"
+          git push --force origin "HEAD:$TARGET_BRANCH"
