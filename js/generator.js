@@ -7,12 +7,16 @@ const CATEGORIES_URL = new URL("../data/categories.json", import.meta.url);
 const SUCCESS_DELAY_MS = 3000;
 const FAILURE_DELAY_MS = 10000;
 const USER_ACTION_STATUS_CODES = new Set([401, 402, 403]);
+const ENABLED_CATEGORIES_KEY = "zhishi_enabled_categories";
+const CUSTOM_CATEGORIES_KEY = "zhishi_custom_categories";
+const MAX_ROUNDS_KEY = "zhishi_max_rounds";
 
-let categoriesPromise = null;
 let loopActive = false;
 let paused = false;
 let delayTimer = null;
 let delayResolver = null;
+let maxRounds = 0;
+let roundsCompleted = 0;
 
 function emit(name, detail = {}) {
   window.dispatchEvent(new CustomEvent(name, { detail }));
@@ -36,6 +40,15 @@ function needsUserAction(error) {
   return USER_ACTION_STATUS_CODES.has(Number(error?.status));
 }
 
+function readJSONStorage(key, fallback) {
+  try {
+    const rawValue = localStorage.getItem(key);
+    return rawValue ? JSON.parse(rawValue) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 function chooseWeightedCategory(categories) {
   const validCategories = categories.filter((category) => Number(category.weight) > 0);
   const totalWeight = validCategories.reduce((sum, category) => sum + Number(category.weight), 0);
@@ -57,29 +70,31 @@ function chooseWeightedCategory(categories) {
 }
 
 async function loadCategories() {
-  if (!categoriesPromise) {
-    categoriesPromise = fetch(CATEGORIES_URL, { cache: "no-store" })
-      .then(async (response) => {
-        if (!response.ok) {
-          throw new Error(`无法读取分类配置：${response.status}`);
-        }
+  const response = await fetch(CATEGORIES_URL, { cache: "no-store" });
 
-        return response.json();
-      })
-      .then((categories) => {
-        if (!Array.isArray(categories) || categories.length === 0) {
-          throw new Error("分类配置必须是非空数组。");
-        }
-
-        return categories;
-      })
-      .catch((error) => {
-        categoriesPromise = null;
-        throw error;
-      });
+  if (!response.ok) {
+    throw new Error(`无法读取分类配置：${response.status}`);
   }
 
-  return categoriesPromise;
+  const builtinCategories = await response.json();
+
+  if (!Array.isArray(builtinCategories) || builtinCategories.length === 0) {
+    throw new Error("分类配置必须是非空数组。");
+  }
+
+  const customCategories = readJSONStorage(CUSTOM_CATEGORIES_KEY, []);
+  const enabledCategories = readJSONStorage(ENABLED_CATEGORIES_KEY, null);
+  const allCategories = builtinCategories.concat(Array.isArray(customCategories) ? customCategories : []);
+
+  if (!Array.isArray(enabledCategories)) {
+    return allCategories;
+  }
+
+  const enabledSet = new Set(enabledCategories);
+  return allCategories.map((category) => ({
+    ...category,
+    weight: enabledSet.has(category.id) ? category.weight : 0
+  }));
 }
 
 function wait(milliseconds) {
@@ -189,6 +204,7 @@ async function runRound() {
 
 async function runLoop() {
   let awaitingUserAction = false;
+  let reachedRoundLimit = false;
 
   emitStatus("running", { message: "自动生成已启动" });
 
@@ -197,6 +213,18 @@ async function runLoop() {
 
     try {
       successful = await runRound();
+      roundsCompleted += 1;
+
+      if (maxRounds > 0 && roundsCompleted >= maxRounds) {
+        reachedRoundLimit = true;
+        paused = true;
+        emitStatus("completed", {
+          roundsCompleted,
+          maxRounds,
+          message: `已完成 ${maxRounds} 轮生成`
+        });
+        break;
+      }
     } catch (error) {
       const normalizedError = error instanceof Error ? error : new Error(String(error));
 
@@ -228,7 +256,7 @@ async function runLoop() {
     await wait(delay);
   }
 
-  if (!awaitingUserAction) {
+  if (!awaitingUserAction && !reachedRoundLimit) {
     emitStatus("paused", { message: "自动生成已暂停" });
   }
 }
@@ -249,6 +277,8 @@ export function start() {
     return;
   }
 
+  maxRounds = Math.max(0, parseInt(localStorage.getItem(MAX_ROUNDS_KEY), 10) || 0);
+  roundsCompleted = 0;
   paused = false;
   loopActive = true;
 
