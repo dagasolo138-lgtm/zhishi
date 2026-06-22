@@ -47,6 +47,7 @@ function formatRecentFacts(recentFacts) {
 
 /**
  * Build DeepSeek prompts for a single category generation round.
+ * The local storage layer assigns record ids and timestamps after validation.
  * @param {object} category One item from data/categories.json.
  * @param {object[]} recentFacts Latest stored facts used as duplicate references.
  * @returns {{systemPrompt: string, userPrompt: string}}
@@ -55,24 +56,22 @@ export function buildPrompt(category, recentFacts = []) {
   const normalizedCategory = requiredCategory(category);
   const recentFactsText = formatRecentFacts(recentFacts);
   const example = {
-    id: "550e8400-e29b-41d4-a716-446655440000",
     category: normalizedCategory.id,
     subcategory: normalizedCategory.subcategories[0],
     fact: "一条至少十个中文字符、可独立核验且表述明确的客观事实。",
-    source_hint: "权威教材或机构名称",
-    timestamp: 0
+    source_hint: "权威教材或机构名称"
   };
 
   const systemPrompt = [
     "你是一个客观事实生成器。",
     "只能输出一个合法 JSON 数组，禁止输出 Markdown、代码围栏、解释、标题或任何数组外文字。",
     "数组必须恰好包含 10 个对象。",
-    "每个对象必须严格包含 id、category、subcategory、fact、source_hint、timestamp 六个字段。",
+    "每个对象必须且只能包含 category、subcategory、fact、source_hint 四个字段。",
+    "记录 id 和 timestamp 由本地程序生成，禁止输出这两个字段。",
     "fact 必须是可独立核验的客观陈述，使用准确、直接的中文，不得表达观点、预测、建议或未经证实的传闻。",
     `fact 不得包含以下模糊词：${FORBIDDEN_FACT_TERMS.join("、")}。`,
     "每条 fact 至少包含 10 个非空白字符。",
     "source_hint 只写能帮助追溯信息的权威来源提示，例如机构、教材、标准或数据库名称；不得虚构网址、DOI、页码或具体引文。",
-    "id 使用 UUID 格式字符串；timestamp 使用整数时间戳。",
     "避免复述、改写或仅替换少量词语来重复给出的近期事实。"
   ].join("\n");
 
