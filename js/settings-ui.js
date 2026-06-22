@@ -96,6 +96,7 @@ export function renderSettingsPanel() {
       <label class="settings-field" for="max-rounds-input">
         <span>本轮生成轮数</span>
         <input
+          class="input"
           id="max-rounds-input"
           name="maxRounds"
           type="number"
@@ -117,9 +118,9 @@ export function renderSettingsPanel() {
         <p id="custom-categories-title" class="settings-section-title">自定义分类</p>
         <div id="custom-categories-list" class="custom-categories-list"></div>
         <div class="custom-cat-inputs">
-          <input id="custom-cat-name" type="text" placeholder="分类名称，如：法律" aria-label="自定义分类名称">
-          <input id="custom-cat-subs" type="text" placeholder="子类，逗号分隔，如：民法,刑法" aria-label="自定义分类子类">
-          <input id="custom-cat-keys" type="text" placeholder="关键词，逗号分隔" aria-label="自定义分类关键词">
+          <input class="input" id="custom-cat-name" type="text" placeholder="分类名称，如：法律" aria-label="自定义分类名称">
+          <input class="input" id="custom-cat-subs" type="text" placeholder="子类，逗号分隔，如：民法,刑法" aria-label="自定义分类子类">
+          <input class="input" id="custom-cat-keys" type="text" placeholder="关键词，逗号分隔" aria-label="自定义分类关键词">
         </div>
         <button id="add-custom-cat" class="button" type="button">添加分类</button>
       </section>
