@@ -10,6 +10,7 @@ const USER_ACTION_STATUS_CODES = new Set([401, 402, 403]);
 const ENABLED_CATEGORIES_KEY = "zhishi_enabled_categories";
 const CUSTOM_CATEGORIES_KEY = "zhishi_custom_categories";
 const MAX_ROUNDS_KEY = "zhishi_max_rounds";
+const NO_ENABLED_CATEGORIES_CODE = "NO_ENABLED_CATEGORIES";
 
 let loopActive = false;
 let paused = false;
@@ -36,8 +37,21 @@ function normalizeFactText(value) {
     : "";
 }
 
+function normalizeMaxRounds(value) {
+  return Math.max(0, parseInt(value, 10) || 0);
+}
+
+function refreshRoundSettings(value = localStorage.getItem(MAX_ROUNDS_KEY)) {
+  maxRounds = normalizeMaxRounds(value);
+  roundsCompleted = 0;
+}
+
 function needsUserAction(error) {
   return USER_ACTION_STATUS_CODES.has(Number(error?.status));
+}
+
+function isNoEnabledCategoriesError(error) {
+  return error?.code === NO_ENABLED_CATEGORIES_CODE;
 }
 
 function readJSONStorage(key, fallback) {
@@ -49,12 +63,33 @@ function readJSONStorage(key, fallback) {
   }
 }
 
+function createNoEnabledCategoriesError() {
+  const error = new Error("未启用任何分类，请在设置中至少勾选一个分类。");
+  error.code = NO_ENABLED_CATEGORIES_CODE;
+  return error;
+}
+
+function isUsableCategory(category) {
+  return Boolean(
+    category
+    && typeof category === "object"
+    && typeof category.id === "string"
+    && category.id.trim()
+    && typeof category.name === "string"
+    && category.name.trim()
+    && Array.isArray(category.subcategories)
+    && category.subcategories.some((item) => typeof item === "string" && item.trim())
+    && Array.isArray(category.keywords)
+    && category.keywords.some((item) => typeof item === "string" && item.trim())
+  );
+}
+
 function chooseWeightedCategory(categories) {
   const validCategories = categories.filter((category) => Number(category.weight) > 0);
   const totalWeight = validCategories.reduce((sum, category) => sum + Number(category.weight), 0);
 
   if (totalWeight <= 0) {
-    throw new Error("分类权重无效，无法选择生成分类。");
+    throw createNoEnabledCategoriesError();
   }
 
   let cursor = Math.random() * totalWeight;
@@ -82,9 +117,13 @@ async function loadCategories() {
     throw new Error("分类配置必须是非空数组。");
   }
 
-  const customCategories = readJSONStorage(CUSTOM_CATEGORIES_KEY, []);
+  const builtinIds = new Set(builtinCategories.map((category) => category.id));
+  const rawCustomCategories = readJSONStorage(CUSTOM_CATEGORIES_KEY, []);
+  const customCategories = (Array.isArray(rawCustomCategories) ? rawCustomCategories : [])
+    .filter(isUsableCategory)
+    .filter((category) => !builtinIds.has(category.id));
   const enabledCategories = readJSONStorage(ENABLED_CATEGORIES_KEY, null);
-  const allCategories = builtinCategories.concat(Array.isArray(customCategories) ? customCategories : []);
+  const allCategories = builtinCategories.concat(customCategories);
 
   if (!Array.isArray(enabledCategories)) {
     return allCategories;
@@ -125,11 +164,21 @@ function getUsableFacts(validFacts, category, recentFacts) {
   const knownFacts = new Set(
     recentFacts.map((item) => normalizeFactText(item.fact)).filter(Boolean)
   );
+  const allowedSubcategories = new Set(
+    Array.isArray(category.subcategories)
+      ? category.subcategories.filter((item) => typeof item === "string" && item.trim())
+      : []
+  );
 
   return validFacts.filter((fact) => {
     const normalizedFact = normalizeFactText(fact.fact);
 
-    if (!normalizedFact || fact.category !== category.id || knownFacts.has(normalizedFact)) {
+    if (
+      !normalizedFact
+      || fact.category !== category.id
+      || !allowedSubcategories.has(fact.subcategory)
+      || knownFacts.has(normalizedFact)
+    ) {
       return false;
     }
 
@@ -228,6 +277,16 @@ async function runLoop() {
     } catch (error) {
       const normalizedError = error instanceof Error ? error : new Error(String(error));
 
+      if (isNoEnabledCategoriesError(normalizedError)) {
+        awaitingUserAction = true;
+        paused = true;
+        emitStatus("needs_categories", {
+          error: normalizedError.message,
+          message: `生成已暂停：${normalizedError.message}`
+        });
+        break;
+      }
+
       if (needsUserAction(normalizedError)) {
         awaitingUserAction = true;
         paused = true;
@@ -261,6 +320,11 @@ async function runLoop() {
   }
 }
 
+window.addEventListener("settings:changed", (event) => {
+  const nextSettings = event.detail && typeof event.detail === "object" ? event.detail : {};
+  refreshRoundSettings(nextSettings.maxRounds);
+});
+
 /**
  * Start the weighted automatic generation loop.
  */
@@ -277,8 +341,7 @@ export function start() {
     return;
   }
 
-  maxRounds = Math.max(0, parseInt(localStorage.getItem(MAX_ROUNDS_KEY), 10) || 0);
-  roundsCompleted = 0;
+  refreshRoundSettings();
   paused = false;
   loopActive = true;
 
