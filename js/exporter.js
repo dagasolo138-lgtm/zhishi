@@ -1,27 +1,41 @@
 import { getAllFacts } from "./storage.js";
 
 const CATEGORIES_URL = new URL("../data/categories.json", import.meta.url);
+const CUSTOM_CATEGORIES_KEY = "zhishi_custom_categories";
 
-let categoriesPromise = null;
+function loadCustomCategories() {
+  try {
+    const rawValue = localStorage.getItem(CUSTOM_CATEGORIES_KEY);
+    const categories = rawValue ? JSON.parse(rawValue) : [];
 
-function loadCategories() {
-  if (!categoriesPromise) {
-    categoriesPromise = fetch(CATEGORIES_URL, { cache: "no-store" })
-      .then(async (response) => {
-        if (!response.ok) {
-          throw new Error(`无法读取分类配置：${response.status}`);
-        }
+    return Array.isArray(categories)
+      ? categories.filter((category) => (
+        category
+        && typeof category === "object"
+        && typeof category.id === "string"
+        && category.id.trim()
+        && typeof category.name === "string"
+        && category.name.trim()
+      ))
+      : [];
+  } catch {
+    return [];
+  }
+}
 
-        return response.json();
-      })
-      .then((categories) => (Array.isArray(categories) ? categories : []))
-      .catch((error) => {
-        categoriesPromise = null;
-        throw error;
-      });
+async function loadCategories() {
+  const response = await fetch(CATEGORIES_URL, { cache: "no-store" });
+
+  if (!response.ok) {
+    throw new Error(`无法读取分类配置：${response.status}`);
   }
 
-  return categoriesPromise;
+  const builtinCategories = await response.json();
+  const normalizedBuiltinCategories = Array.isArray(builtinCategories) ? builtinCategories : [];
+  const builtinIds = new Set(normalizedBuiltinCategories.map((category) => category?.id));
+  const customCategories = loadCustomCategories().filter((category) => !builtinIds.has(category.id));
+
+  return normalizedBuiltinCategories.concat(customCategories);
 }
 
 function downloadText(filename, content, mimeType) {
