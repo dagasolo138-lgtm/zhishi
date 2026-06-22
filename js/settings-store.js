@@ -3,6 +3,7 @@ export const SETTINGS_STORAGE_KEY = "zhishi_settings";
 export const ENABLED_CATEGORIES_KEY = "zhishi_enabled_categories";
 export const CUSTOM_CATEGORIES_KEY = "zhishi_custom_categories";
 export const MAX_ROUNDS_KEY = "zhishi_max_rounds";
+export const TARGETED_GENERATION_KEY = "zhishi_targeted_generation";
 
 export const DEFAULT_SETTINGS = Object.freeze({
   generationEnabled: true
@@ -42,9 +43,23 @@ function normalizeCustomCategories(value) {
   return Array.isArray(value) ? value.filter((item) => item && typeof item === "object") : [];
 }
 
+function normalizeTargetedGeneration(value) {
+  const input = value && typeof value === "object" ? value : {};
+  const categoryId = typeof input.categoryId === "string" ? input.categoryId.trim() : "";
+  const subcategories = Array.isArray(input.subcategories)
+    ? [...new Set(input.subcategories.filter((item) => typeof item === "string" && item.trim()).map((item) => item.trim()))]
+    : [];
+
+  return {
+    enabled: input.enabled === true,
+    categoryId,
+    subcategories
+  };
+}
+
 /**
  * Load persisted UI settings and the locally stored DeepSeek API key.
- * @returns {{apiKey: string, generationEnabled: boolean, maxRounds: number, enabledCategories: string[]|null, customCategories: object[]}}
+ * @returns {{apiKey: string, generationEnabled: boolean, maxRounds: number, enabledCategories: string[]|null, customCategories: object[], targetedGeneration: {enabled: boolean, categoryId: string, subcategories: string[]}}}
  */
 export function loadSettings() {
   let storedSettings = {};
@@ -61,14 +76,15 @@ export function loadSettings() {
   const maxRounds = normalizeMaxRounds(localStorage.getItem(MAX_ROUNDS_KEY));
   const enabledCategories = normalizeEnabledCategories(readJSONSetting(ENABLED_CATEGORIES_KEY, null));
   const customCategories = normalizeCustomCategories(readJSONSetting(CUSTOM_CATEGORIES_KEY, []));
+  const targetedGeneration = normalizeTargetedGeneration(readJSONSetting(TARGETED_GENERATION_KEY, null));
 
-  return { apiKey, ...settings, maxRounds, enabledCategories, customCategories };
+  return { apiKey, ...settings, maxRounds, enabledCategories, customCategories, targetedGeneration };
 }
 
 /**
  * Persist settings. API key is stored separately so it is never included in exported settings.
- * @param {{apiKey?: string, generationEnabled?: boolean, maxRounds?: number|string, enabledCategories?: string[]|null, customCategories?: object[]}} nextSettings
- * @returns {{apiKey: string, generationEnabled: boolean, maxRounds: number, enabledCategories: string[]|null, customCategories: object[]}}
+ * @param {{apiKey?: string, generationEnabled?: boolean, maxRounds?: number|string, enabledCategories?: string[]|null, customCategories?: object[], targetedGeneration?: {enabled?: boolean, categoryId?: string, subcategories?: string[]}}} nextSettings
+ * @returns {{apiKey: string, generationEnabled: boolean, maxRounds: number, enabledCategories: string[]|null, customCategories: object[], targetedGeneration: {enabled: boolean, categoryId: string, subcategories: string[]}}}
  */
 export function saveSettings(nextSettings = {}) {
   const current = loadSettings();
@@ -87,6 +103,9 @@ export function saveSettings(nextSettings = {}) {
   const customCategories = Object.prototype.hasOwnProperty.call(nextSettings, "customCategories")
     ? normalizeCustomCategories(nextSettings.customCategories)
     : current.customCategories;
+  const targetedGeneration = Object.prototype.hasOwnProperty.call(nextSettings, "targetedGeneration")
+    ? normalizeTargetedGeneration(nextSettings.targetedGeneration)
+    : current.targetedGeneration;
 
   if (apiKey) {
     localStorage.setItem(API_KEY_STORAGE_KEY, apiKey);
@@ -104,8 +123,9 @@ export function saveSettings(nextSettings = {}) {
   }
 
   localStorage.setItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(customCategories));
+  localStorage.setItem(TARGETED_GENERATION_KEY, JSON.stringify(targetedGeneration));
 
-  const saved = { apiKey, ...settings, maxRounds, enabledCategories, customCategories };
+  const saved = { apiKey, ...settings, maxRounds, enabledCategories, customCategories, targetedGeneration };
   emit("settings:changed", saved);
   return saved;
 }

@@ -124,6 +124,26 @@ export function renderSettingsPanel() {
         </div>
         <button id="add-custom-cat" class="button" type="button">添加分类</button>
       </section>
+      <section aria-labelledby="targeted-generation-title">
+        <p id="targeted-generation-title" class="settings-section-title">定向生成</p>
+        <label class="settings-switch" for="targeted-enabled">
+          <span>启用定向生成</span>
+          <input id="targeted-enabled" name="targetedEnabled" type="checkbox">
+        </label>
+        <p class="settings-help">开启后只生成指定大类/小类，关闭则恢复加权随机生成</p>
+        <div id="targeted-options" hidden>
+          <label class="settings-field" for="targeted-category">
+            <span>选择大类</span>
+            <select id="targeted-category" name="targetedCategory">
+              <option value="">请选择大类</option>
+            </select>
+          </label>
+          <div id="targeted-subcategories-wrapper" hidden>
+            <p class="settings-section-title">选择小类（可多选，不选则全部）</p>
+            <div id="targeted-subcategories" class="category-toggles-grid"></div>
+          </div>
+        </div>
+      </section>
       <div class="settings-actions">
         <button class="button button--primary" type="submit">保存设置</button>
         <button class="button button--danger" id="clear-facts-button" type="button">清空知识库</button>
@@ -147,6 +167,92 @@ export function renderSettingsPanel() {
   const customCategorySubcategoriesInput = panel.querySelector("#custom-cat-subs");
   const customCategoryKeywordsInput = panel.querySelector("#custom-cat-keys");
   const addCustomCategoryButton = panel.querySelector("#add-custom-cat");
+  const targetedEnabledInput = panel.querySelector("#targeted-enabled");
+  const targetedOptions = panel.querySelector("#targeted-options");
+  const targetedCategorySelect = panel.querySelector("#targeted-category");
+  const targetedSubcategoriesWrapper = panel.querySelector("#targeted-subcategories-wrapper");
+  const targetedSubcategories = panel.querySelector("#targeted-subcategories");
+
+  function getSubcategoryName(item) {
+    return typeof item === "string" ? item.trim() : item?.name?.trim() || "";
+  }
+
+  function getTargetedGenerationFromControls() {
+    return {
+      enabled: targetedEnabledInput.checked,
+      categoryId: targetedCategorySelect.value,
+      subcategories: [...targetedSubcategories.querySelectorAll('input[type="checkbox"]:checked')].map((checkbox) => checkbox.value)
+    };
+  }
+
+  async function getAllCategories() {
+    const builtinCategories = await loadBuiltinCategories();
+    return [...builtinCategories, ...customCategories];
+  }
+
+  function setTargetedOptionsVisibility() {
+    targetedOptions.hidden = !targetedEnabledInput.checked;
+  }
+
+  function renderTargetedSubcategories(categoryId, selectedSubcategories = []) {
+    const selectedSet = new Set(selectedSubcategories);
+    const categories = targetedCategorySelect._categories || [];
+    const category = categories.find((item) => item?.id === categoryId);
+    const fragment = document.createDocumentFragment();
+    const subcategories = Array.isArray(category?.subcategories) ? category.subcategories : [];
+
+    subcategories.forEach((subcategory) => {
+      const subcategoryName = getSubcategoryName(subcategory);
+
+      if (!subcategoryName) {
+        return;
+      }
+
+      const label = document.createElement("label");
+      const checkbox = document.createElement("input");
+      const name = document.createElement("span");
+
+      label.className = "category-toggle-item";
+      checkbox.type = "checkbox";
+      checkbox.value = subcategoryName;
+      checkbox.checked = selectedSet.has(subcategoryName);
+      name.textContent = subcategoryName;
+      label.append(checkbox, name);
+      fragment.appendChild(label);
+    });
+
+    targetedSubcategories.replaceChildren(fragment);
+    targetedSubcategoriesWrapper.hidden = !categoryId;
+  }
+
+  async function renderTargetedCategoryOptions(selectedCategoryId = settings.targetedGeneration.categoryId, selectedSubcategories = settings.targetedGeneration.subcategories) {
+    const categories = await getAllCategories();
+    const fragment = document.createDocumentFragment();
+    const placeholder = document.createElement("option");
+
+    targetedCategorySelect._categories = categories;
+    placeholder.value = "";
+    placeholder.textContent = "请选择大类";
+    fragment.appendChild(placeholder);
+
+    categories.forEach((category) => {
+      const categoryId = typeof category?.id === "string" ? category.id : "";
+      const categoryName = typeof category?.name === "string" ? category.name : categoryId;
+
+      if (!categoryId || !categoryName) {
+        return;
+      }
+
+      const option = document.createElement("option");
+      option.value = categoryId;
+      option.textContent = categoryName;
+      fragment.appendChild(option);
+    });
+
+    targetedCategorySelect.replaceChildren(fragment);
+    targetedCategorySelect.value = categories.some((category) => category?.id === selectedCategoryId) ? selectedCategoryId : "";
+    renderTargetedSubcategories(targetedCategorySelect.value, selectedSubcategories);
+  }
 
   function getEnabledCategoriesFromToggles() {
     const checkboxes = [...categoryToggles.querySelectorAll('input[type="checkbox"]')];
@@ -159,8 +265,7 @@ export function renderSettingsPanel() {
   }
 
   async function renderCategoryToggles() {
-    const builtinCategories = await loadBuiltinCategories();
-    const categories = [...builtinCategories, ...customCategories];
+    const categories = await getAllCategories();
     const enabledSet = enabledCategories === null ? null : new Set(enabledCategories);
     const fragment = document.createDocumentFragment();
 
@@ -216,6 +321,7 @@ export function renderSettingsPanel() {
 
         try {
           await renderCategoryToggles();
+          await renderTargetedCategoryOptions(getTargetedGenerationFromControls().categoryId, getTargetedGenerationFromControls().subcategories);
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
           setFeedback(feedback, `分类加载失败：${message}`, "error");
@@ -232,12 +338,19 @@ export function renderSettingsPanel() {
   apiKeyInput.value = settings.apiKey;
   generationToggle.checked = settings.generationEnabled;
   maxRoundsInput.value = settings.maxRounds > 0 ? String(settings.maxRounds) : "0";
+  targetedEnabledInput.checked = settings.targetedGeneration.enabled;
+  setTargetedOptionsVisibility();
   host.appendChild(panel);
   renderCustomCategoryList();
 
   renderCategoryToggles().catch((error) => {
     const message = error instanceof Error ? error.message : String(error);
     setFeedback(feedback, `分类加载失败：${message}`, "error");
+  });
+
+  renderTargetedCategoryOptions().catch((error) => {
+    const message = error instanceof Error ? error.message : String(error);
+    setFeedback(feedback, `定向生成分类加载失败：${message}`, "error");
   });
 
   const toggleButton = document.querySelector("#settings-toggle");
@@ -249,6 +362,14 @@ export function renderSettingsPanel() {
 
   categoryToggles.addEventListener("change", () => {
     enabledCategories = getEnabledCategoriesFromToggles();
+  });
+
+  targetedEnabledInput.addEventListener("change", () => {
+    setTargetedOptionsVisibility();
+  });
+
+  targetedCategorySelect.addEventListener("change", () => {
+    renderTargetedSubcategories(targetedCategorySelect.value, []);
   });
 
   selectAllCategoriesButton.addEventListener("click", () => {
@@ -289,6 +410,7 @@ export function renderSettingsPanel() {
 
     try {
       await renderCategoryToggles();
+      await renderTargetedCategoryOptions(getTargetedGenerationFromControls().categoryId, getTargetedGenerationFromControls().subcategories);
       customCategoryNameInput.value = "";
       customCategorySubcategoriesInput.value = "";
       customCategoryKeywordsInput.value = "";
@@ -308,7 +430,8 @@ export function renderSettingsPanel() {
       generationEnabled: generationToggle.checked,
       maxRounds: maxRoundsInput.value,
       enabledCategories,
-      customCategories
+      customCategories,
+      targetedGeneration: getTargetedGenerationFromControls()
     });
 
     if (saved.generationEnabled) {
@@ -325,7 +448,8 @@ export function renderSettingsPanel() {
       generationEnabled: generationToggle.checked,
       maxRounds: maxRoundsInput.value,
       enabledCategories: getEnabledCategoriesFromToggles(),
-      customCategories
+      customCategories,
+      targetedGeneration: getTargetedGenerationFromControls()
     });
 
     if (saved.generationEnabled) {
