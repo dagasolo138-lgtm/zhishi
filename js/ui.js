@@ -1,5 +1,5 @@
 import { exportJSON, exportMarkdown } from "./exporter.js";
-import { getAllFacts, getFacts } from "./storage.js";
+import { getFactStats, getFacts } from "./storage.js";
 
 const CATEGORIES_URL = new URL("../data/categories.json", import.meta.url);
 const CUSTOM_CATEGORIES_KEY = "zhishi_custom_categories";
@@ -58,10 +58,21 @@ async function loadCategories() {
   return categories;
 }
 
-function formatDate(timestamp) {
-  const date = new Date(Number(timestamp));
+function parseDate(timestamp) {
+  const numericTimestamp = Number(timestamp);
 
-  if (Number.isNaN(date.getTime())) {
+  if (!Number.isFinite(numericTimestamp)) {
+    return null;
+  }
+
+  const date = new Date(numericTimestamp);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatDate(timestamp) {
+  const date = parseDate(timestamp);
+
+  if (!date) {
     return "时间未知";
   }
 
@@ -97,10 +108,14 @@ function createFactCard(fact) {
   const footer = document.createElement("footer");
   const source = createTextElement("span", "fact-card__source", fact.source_hint || "来源提示缺失");
   const time = createTextElement("time", "fact-card__time", formatDate(fact.timestamp));
+  const timestampDate = parseDate(fact.timestamp);
 
   card.className = "fact-card";
   card.dataset.factId = fact.id || "";
-  time.dateTime = new Date(Number(fact.timestamp) || Date.now()).toISOString();
+
+  if (timestampDate) {
+    time.dateTime = timestampDate.toISOString();
+  }
 
   header.className = "fact-card__header";
   header.append(categoryBadge, subcategory);
@@ -264,18 +279,12 @@ export async function renderFilter() {
  * Render total facts and per-category counts.
  */
 export async function renderStats() {
-  const [facts, categories] = await Promise.all([getAllFacts(), loadCategories()]);
+  const [{ total: factTotal, counts }, categories] = await Promise.all([getFactStats(), loadCategories()]);
   const total = element("#stats-total");
   const categoryStats = element("#category-stats");
-  const counts = new Map();
-
-  facts.forEach((fact) => {
-    const categoryId = fact.category || "uncategorized";
-    counts.set(categoryId, (counts.get(categoryId) || 0) + 1);
-  });
 
   if (total) {
-    total.textContent = `共 ${facts.length} 条事实`;
+    total.textContent = `共 ${factTotal} 条事实`;
   }
 
   if (!categoryStats) {
@@ -357,17 +366,24 @@ function handleGeneratorStatus(event) {
 function bindRuntimeEvents() {
   window.addEventListener("fact:new", () => {
     scheduleFactRefresh(80);
-    renderStats().catch((error) => setStatus(`统计更新失败：${error.message}`, "error"));
+    renderStats().catch((error) => setStatus(`统计更新失败：${error instanceof Error ? error.message : String(error)}`, "error"));
   });
 
   window.addEventListener("facts:cleared", () => {
     scheduleFactRefresh();
-    renderStats().catch((error) => setStatus(`统计更新失败：${error.message}`, "error"));
+    renderStats().catch((error) => setStatus(`统计更新失败：${error instanceof Error ? error.message : String(error)}`, "error"));
   });
 
   window.addEventListener("settings:changed", () => {
-    renderFilter().catch((error) => setStatus(`分类更新失败：${error.message}`, "error"));
-    renderStats().catch((error) => setStatus(`统计更新失败：${error.message}`, "error"));
+    (async () => {
+      try {
+        await renderFilter();
+        await Promise.all([refreshFacts(), renderStats()]);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        setStatus(`设置更新失败：${message}`, "error");
+      }
+    })();
   });
 
   window.addEventListener("generator:status", handleGeneratorStatus);
