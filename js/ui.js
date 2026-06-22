@@ -2,6 +2,7 @@ import { exportJSON, exportMarkdown } from "./exporter.js";
 import { getAllFacts, getFacts } from "./storage.js";
 
 const CATEGORIES_URL = new URL("../data/categories.json", import.meta.url);
+const CUSTOM_CATEGORIES_KEY = "zhishi_custom_categories";
 const SEARCH_DEBOUNCE_MS = 180;
 const FACTS_RENDER_LIMIT = 300;
 
@@ -13,8 +14,6 @@ const state = {
   refreshTimer: null,
   refreshSequence: 0
 };
-
-let categoriesPromise = null;
 
 function element(selector) {
   return document.querySelector(selector);
@@ -30,32 +29,33 @@ function requiredElement(selector) {
   return found;
 }
 
+function loadCustomCategories() {
+  try {
+    const rawValue = localStorage.getItem(CUSTOM_CATEGORIES_KEY);
+    const categories = rawValue ? JSON.parse(rawValue) : [];
+    return Array.isArray(categories) ? categories.filter((category) => category && typeof category === "object") : [];
+  } catch {
+    return [];
+  }
+}
+
 async function loadCategories() {
-  if (!categoriesPromise) {
-    categoriesPromise = fetch(CATEGORIES_URL, { cache: "no-store" })
-      .then(async (response) => {
-        if (!response.ok) {
-          throw new Error(`无法读取分类配置：${response.status}`);
-        }
+  const response = await fetch(CATEGORIES_URL, { cache: "no-store" });
 
-        return response.json();
-      })
-      .then((categories) => {
-        if (!Array.isArray(categories)) {
-          throw new Error("分类配置格式错误。");
-        }
-
-        state.categories = categories;
-        state.categoryNames = new Map(categories.map((category) => [category.id, category.name]));
-        return categories;
-      })
-      .catch((error) => {
-        categoriesPromise = null;
-        throw error;
-      });
+  if (!response.ok) {
+    throw new Error(`无法读取分类配置：${response.status}`);
   }
 
-  return categoriesPromise;
+  const builtinCategories = await response.json();
+
+  if (!Array.isArray(builtinCategories)) {
+    throw new Error("分类配置格式错误。");
+  }
+
+  const categories = builtinCategories.concat(loadCustomCategories());
+  state.categories = categories;
+  state.categoryNames = new Map(categories.map((category) => [category.id, category.name]));
+  return categories;
 }
 
 function formatDate(timestamp) {
@@ -240,22 +240,19 @@ export function renderSearch() {
 export async function renderFilter() {
   const filter = requiredElement("#category-filter");
   const categories = await loadCategories();
+  const selectedValue = filter.value;
+  const fragment = document.createDocumentFragment();
 
-  if (filter.dataset.populated !== "true") {
-    const selectedValue = filter.value;
-    const fragment = document.createDocumentFragment();
+  fragment.appendChild(createCategoryOption("", "全部分类"));
+  categories.forEach((category) => {
+    fragment.appendChild(createCategoryOption(category.id, category.name));
+  });
 
-    fragment.appendChild(createCategoryOption("", "全部分类"));
-    categories.forEach((category) => {
-      fragment.appendChild(createCategoryOption(category.id, category.name));
-    });
-
-    filter.replaceChildren(fragment);
-    filter.value = [...filter.options].some((option) => option.value === selectedValue)
-      ? selectedValue
-      : "";
-    filter.dataset.populated = "true";
-  }
+  filter.replaceChildren(fragment);
+  filter.value = [...filter.options].some((option) => option.value === selectedValue)
+    ? selectedValue
+    : "";
+  filter.dataset.populated = "true";
 
   if (filter.dataset.bound !== "true") {
     filter.addEventListener("change", () => refreshFacts());
@@ -365,6 +362,11 @@ function bindRuntimeEvents() {
 
   window.addEventListener("facts:cleared", () => {
     scheduleFactRefresh();
+    renderStats().catch((error) => setStatus(`统计更新失败：${error.message}`, "error"));
+  });
+
+  window.addEventListener("settings:changed", () => {
+    renderFilter().catch((error) => setStatus(`分类更新失败：${error.message}`, "error"));
     renderStats().catch((error) => setStatus(`统计更新失败：${error.message}`, "error"));
   });
 
