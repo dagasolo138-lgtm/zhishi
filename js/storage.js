@@ -311,12 +311,15 @@ export async function countFacts() {
 
 /**
  * Return the newest n facts for prompt-level duplicate avoidance.
+ * When category is provided, restrict the lookup to that category.
  * @param {number} n
+ * @param {string} category
  * @returns {Promise<object[]>}
  */
-export async function getRecentFacts(n = 20) {
+export async function getRecentFacts(n = 20, category = "") {
   const database = await initDB();
   const limit = Math.max(0, Math.floor(Number(n) || 0));
+  const normalizedCategory = normalizeText(category);
 
   if (limit === 0) {
     return [];
@@ -324,15 +327,38 @@ export async function getRecentFacts(n = 20) {
 
   return new Promise((resolve, reject) => {
     const transaction = database.transaction(FACTS_STORE, "readonly");
-    const index = transaction.objectStore(FACTS_STORE).index("timestamp");
+    const store = transaction.objectStore(FACTS_STORE);
+    const index = normalizedCategory ? store.index("category") : store.index("timestamp");
     const facts = [];
-    const request = index.openCursor(null, "prev");
+    const request = normalizedCategory
+      ? index.openCursor(IDBKeyRange.only(normalizedCategory))
+      : index.openCursor(null, "prev");
 
     request.onsuccess = () => {
       const cursor = request.result;
 
-      if (!cursor || facts.length >= limit) {
+      if (!cursor || (!normalizedCategory && facts.length >= limit)) {
         resolve(facts);
+        return;
+      }
+
+      if (normalizedCategory) {
+        const fact = cursor.value;
+        const timestamp = Number.isFinite(Number(fact.timestamp)) ? Number(fact.timestamp) : 0;
+        const insertAt = facts.findIndex((item) => Number(item.timestamp) < timestamp);
+
+        if (insertAt === -1) {
+          if (facts.length < limit) {
+            facts.push(fact);
+          }
+        } else {
+          facts.splice(insertAt, 0, fact);
+          if (facts.length > limit) {
+            facts.pop();
+          }
+        }
+
+        cursor.continue();
         return;
       }
 
