@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="zhishi：本地优先的结构化客观事实知识库。">
+    <meta name="theme-color" content="#0d0d0d">
+    <title>zhishi · 本地知识库</title>
+    <link rel="stylesheet" href="css/style.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar__inner">
+        <div class="brand">
+          <h1 class="brand__title">zhishi</h1>
+          <span class="brand__subtitle">本地结构化事实库</span>
+        </div>
+
+        <div class="toolbar" aria-label="知识库工具">
+          <label class="search-control" for="search-input">
+            <span class="sr-only">搜索事实</span>
+            <input
+              id="search-input"
+              type="search"
+              placeholder="搜索事实、来源或子分类"
+              autocomplete="off"
+              spellcheck="false"
+            >
+          </label>
+
+          <label class="sr-only" for="category-filter">筛选分类</label>
+          <select id="category-filter" aria-label="筛选分类">
+            <option value="">全部分类</option>
+          </select>
+
+          <button id="export-json" class="button" type="button">导出 JSON</button>
+          <button id="export-markdown" class="button" type="button">导出 Markdown</button>
+          <button
+            id="settings-toggle"
+            class="icon-button"
+            type="button"
+            aria-label="打开设置"
+            aria-expanded="false"
+            aria-controls="settings-panel"
+          ></button>
+        </div>
+      </div>
+    </header>
+
+    <main class="app-shell">
+      <section class="stats-panel" aria-label="知识库统计">
+        <span id="stats-total">共 0 条事实</span>
+        <div id="category-stats" aria-live="polite"></div>
+      </section>
+
+      <section aria-label="事实卡片流">
+        <div id="facts-grid" aria-live="polite" aria-busy="false">
+          <p class="facts-empty">正在初始化本地知识库…</p>
+        </div>
+      </section>
+    </main>
+
+    <div id="settings-panel-host"></div>
+
+    <footer class="statusbar" aria-live="polite">
+      <div class="statusbar__inner">
+        <div class="statusbar__item">
+          <span class="statusbar__label">生成状态</span>
+          <span id="status-text" data-status="idle">正在初始化…</span>
+        </div>
+        <div class="statusbar__item">
+          <span class="statusbar__label">最近生成</span>
+          <time id="last-generated">尚未生成</time>
+        </div>
+      </div>
+    </footer>
+
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>
