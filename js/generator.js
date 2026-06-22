@@ -1,4 +1,4 @@
-import { streamGenerate } from "./api.js";
+import { hasConfiguredApiKey, streamGenerate } from "./api.js";
 import { buildPrompt } from "./prompt.js";
 import { getRecentFacts, saveFact } from "./storage.js";
 import { validate } from "./validator.js";
@@ -6,6 +6,7 @@ import { validate } from "./validator.js";
 const CATEGORIES_URL = new URL("../data/categories.json", import.meta.url);
 const SUCCESS_DELAY_MS = 3000;
 const FAILURE_DELAY_MS = 10000;
+const USER_ACTION_STATUS_CODES = new Set([401, 402, 403]);
 
 let categoriesPromise = null;
 let loopActive = false;
@@ -29,6 +30,10 @@ function normalizeFactText(value) {
   return typeof value === "string"
     ? value.replace(/\s+/g, " ").trim().toLocaleLowerCase()
     : "";
+}
+
+function needsUserAction(error) {
+  return USER_ACTION_STATUS_CODES.has(Number(error?.status));
 }
 
 function chooseWeightedCategory(categories) {
@@ -118,6 +123,15 @@ function getUsableFacts(validFacts, category, recentFacts) {
   });
 }
 
+function makeStoredFact(fact, categoryId) {
+  return {
+    category: categoryId,
+    subcategory: fact.subcategory,
+    fact: fact.fact,
+    source_hint: fact.source_hint
+  };
+}
+
 async function runRound() {
   const categories = await loadCategories();
   const category = chooseWeightedCategory(categories);
@@ -154,7 +168,7 @@ async function runRound() {
       break;
     }
 
-    const savedFact = await saveFact(fact);
+    const savedFact = await saveFact(makeStoredFact(fact, category.id));
     savedCount += 1;
     emit("fact:new", savedFact);
   }
@@ -174,6 +188,8 @@ async function runRound() {
 }
 
 async function runLoop() {
+  let awaitingUserAction = false;
+
   emitStatus("running", { message: "自动生成已启动" });
 
   while (!paused) {
@@ -183,6 +199,17 @@ async function runLoop() {
       successful = await runRound();
     } catch (error) {
       const normalizedError = error instanceof Error ? error : new Error(String(error));
+
+      if (needsUserAction(normalizedError)) {
+        awaitingUserAction = true;
+        paused = true;
+        emitStatus("needs_api_key", {
+          error: normalizedError.message,
+          message: `生成已暂停：${normalizedError.message}`
+        });
+        break;
+      }
+
       emitStatus("error", {
         error: normalizedError.message,
         message: `生成失败：${normalizedError.message}`
@@ -201,7 +228,9 @@ async function runLoop() {
     await wait(delay);
   }
 
-  emitStatus("paused", { message: "自动生成已暂停" });
+  if (!awaitingUserAction) {
+    emitStatus("paused", { message: "自动生成已暂停" });
+  }
 }
 
 /**
@@ -209,6 +238,14 @@ async function runLoop() {
  */
 export function start() {
   if (loopActive) {
+    return;
+  }
+
+  if (!hasConfiguredApiKey()) {
+    paused = true;
+    emitStatus("needs_api_key", {
+      message: "请先在设置中保存 DeepSeek API Key。"
+    });
     return;
   }
 
