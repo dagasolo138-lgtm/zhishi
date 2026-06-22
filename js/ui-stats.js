@@ -1,3 +1,4 @@
+import { loadOfficialFacts } from "./official-store.js";
 import { getAllFacts } from "./storage.js";
 
 function element(selector) {
@@ -18,7 +19,11 @@ function createTextElement(tagName, className, text) {
 }
 
 export async function renderStats({ categories = [], categoryNames = new Map() } = {}) {
-  const facts = await getAllFacts();
+  const [personalFacts, officialFacts] = await Promise.all([
+    getAllFacts(),
+    loadOfficialFacts()
+  ]);
+  const facts = [...personalFacts, ...officialFacts];
   const factTotal = facts.length;
   const counts = facts.reduce((categoryCounts, fact) => {
     const categoryId = typeof fact.category === "string" && fact.category.trim() ? fact.category.trim() : "uncategorized";

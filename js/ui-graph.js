@@ -1,3 +1,4 @@
+import { loadOfficialFacts } from "./official-store.js";
 import { getAllFacts } from "./storage.js";
 import { loadSettings } from "./settings-store.js";
 
@@ -267,10 +268,12 @@ export async function initGraph(onCategoryClick) {
     throw new Error("D3.js is not loaded.");
   }
 
-  const [facts, categories] = await Promise.all([
+  const [personalFacts, officialFacts, categories] = await Promise.all([
     getAllFacts(),
+    loadOfficialFacts(),
     loadCategories()
   ]);
+  const facts = [...personalFacts, ...officialFacts];
 
   renderGraph(buildGraphData(facts, categories), onCategoryClick);
 }
