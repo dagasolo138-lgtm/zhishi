@@ -199,7 +199,7 @@ function makeStoredFact(fact, categoryId) {
 async function runRound() {
   const categories = await loadCategories();
   const category = chooseWeightedCategory(categories);
-  const recentFacts = await getRecentFacts(20);
+  const recentFacts = await getRecentFacts(20, category.id);
   const { systemPrompt, userPrompt } = buildPrompt(category, recentFacts);
   let receivedLength = 0;
 
