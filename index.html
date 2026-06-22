@@ -6,24 +6,24 @@
     <meta name="description" content="zhishi：本地优先的结构化客观事实知识库。">
     <meta name="theme-color" content="#0d0d0d">
     <title>zhishi · 本地知识库</title>
-    <link rel="stylesheet" href="css/style.css?v=6">
+    <link rel="stylesheet" href="css/style.css?v=7">
     <script type="importmap">
       {
         "imports": {
-          "./js/api.js": "./js/api.js?v=6",
-          "./js/app.js": "./js/app.js?v=6",
-          "./js/exporter.js": "./js/exporter.js?v=6",
-          "./js/generator.js": "./js/generator.js?v=6",
-          "./js/prompt.js": "./js/prompt.js?v=6",
-          "./js/settings.js": "./js/settings.js?v=6",
-          "./js/settings-store.js": "./js/settings-store.js?v=6",
-          "./js/settings-ui.js": "./js/settings-ui.js?v=6",
-          "./js/storage.js": "./js/storage.js?v=6",
-          "./js/ui.js": "./js/ui.js?v=6",
-          "./js/ui-cards.js": "./js/ui-cards.js?v=6",
-          "./js/ui-stats.js": "./js/ui-stats.js?v=6",
-          "./js/ui-tabs.js": "./js/ui-tabs.js?v=6",
-          "./js/validator.js": "./js/validator.js?v=6"
+          "./js/api.js": "./js/api.js?v=7",
+          "./js/app.js": "./js/app.js?v=7",
+          "./js/exporter.js": "./js/exporter.js?v=7",
+          "./js/generator.js": "./js/generator.js?v=7",
+          "./js/prompt.js": "./js/prompt.js?v=7",
+          "./js/settings.js": "./js/settings.js?v=7",
+          "./js/settings-store.js": "./js/settings-store.js?v=7",
+          "./js/settings-ui.js": "./js/settings-ui.js?v=7",
+          "./js/storage.js": "./js/storage.js?v=7",
+          "./js/ui.js": "./js/ui.js?v=7",
+          "./js/ui-cards.js": "./js/ui-cards.js?v=7",
+          "./js/ui-stats.js": "./js/ui-stats.js?v=7",
+          "./js/ui-tabs.js": "./js/ui-tabs.js?v=7",
+          "./js/validator.js": "./js/validator.js?v=7"
         }
       }
     </script>
@@ -34,6 +34,10 @@
         <div class="brand">
           <h1 class="brand__title">zhishi</h1>
           <span class="brand__subtitle">本地结构化事实库</span>
+          <span class="brand__status" aria-live="polite">
+            <span id="status-dot" data-status="idle" aria-hidden="true"></span>
+            <span id="status-text" data-status="idle">正在初始化…</span>
+          </span>
         </div>
 
         <div class="toolbar" aria-label="知识库工具">
@@ -47,10 +51,6 @@
               spellcheck="false"
             >
           </div>
-
-          <select id="category-filter" aria-label="筛选分类">
-            <option value="">全部分类</option>
-          </select>
 
           <button id="export-json" class="button" type="button">导出 JSON</button>
           <button id="export-markdown" class="button" type="button">导出 Markdown</button>
@@ -67,7 +67,14 @@
     </header>
 
     <main class="app-shell">
-      <section class="stats-panel" aria-label="知识库统计">
+      <nav class="tab-bar" aria-label="事实分类导航">
+        <button class="tab-item active" type="button" data-tab="all">全部</button>
+        <button class="tab-item" type="button" data-tab="graph">图谱</button>
+      </nav>
+
+      <div class="subtab-bar" id="subtab-bar" aria-label="子类筛选"></div>
+
+      <section class="stats-panel" id="stats-panel" aria-label="知识库统计">
         <span id="stats-total">共 0 条事实</span>
         <div id="category-stats" aria-live="polite"></div>
       </section>
@@ -76,24 +83,12 @@
         <div id="facts-grid" aria-live="polite" aria-busy="false">
           <p class="facts-empty">正在初始化本地知识库…</p>
         </div>
+        <div id="graph-container" hidden></div>
       </section>
     </main>
 
     <div id="settings-panel-host"></div>
 
-    <footer class="statusbar" aria-live="polite">
-      <div class="statusbar__inner">
-        <div class="statusbar__item">
-          <span class="statusbar__label">生成状态</span>
-          <span id="status-text" data-status="idle">正在初始化…</span>
-        </div>
-        <div class="statusbar__item">
-          <span class="statusbar__label">最近生成</span>
-          <time id="last-generated">尚未生成</time>
-        </div>
-      </div>
-    </footer>
-
-    <script type="module" src="js/app.js?v=6"></script>
+    <script type="module" src="js/app.js?v=7"></script>
   </body>
 </html>
