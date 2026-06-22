@@ -1,8 +1,8 @@
 import { hasConfiguredApiKey, streamGenerate } from "./api.js";
 import { buildPrompt } from "./prompt.js";
-import { ENABLED_CATEGORIES_KEY, CUSTOM_CATEGORIES_KEY, MAX_ROUNDS_KEY } from "./settings-store.js";
+import { MAX_ROUNDS_KEY, loadSettings } from "./settings-store.js";
 import { getRecentKeywords, saveFact } from "./storage.js";
-import { loadCategories } from "./ui-tabs.js";
+import { loadCategories as loadBaseCategories } from "./ui-tabs.js";
 import { validate } from "./validator.js";
 
 const SUCCESS_DELAY_MS = 3000;
@@ -74,6 +74,45 @@ function getSubcategoryLeaves(item) {
   return item && typeof item === "object" && Array.isArray(item.leaves)
     ? item.leaves.filter((leaf) => typeof leaf === "string" && leaf.trim())
     : [];
+}
+
+
+function getTargetedSubcategoryName(item) {
+  return typeof item === "string" ? item.trim() : item?.name?.trim() || "";
+}
+
+function applyTargetedGeneration(categories) {
+  const { targetedGeneration } = loadSettings();
+
+  if (!targetedGeneration.enabled || !targetedGeneration.categoryId) {
+    return categories;
+  }
+
+  const selectedSubcategories = new Set(targetedGeneration.subcategories);
+
+  return categories.map((category) => {
+    if (category?.id !== targetedGeneration.categoryId) {
+      return { ...category, weight: 0 };
+    }
+
+    if (selectedSubcategories.size === 0) {
+      return category;
+    }
+
+    const subcategories = Array.isArray(category.subcategories)
+      ? category.subcategories.filter((subcategory) => selectedSubcategories.has(getTargetedSubcategoryName(subcategory)))
+      : [];
+
+    return {
+      ...category,
+      subcategories
+    };
+  });
+}
+
+async function loadCategories() {
+  const categories = await loadBaseCategories();
+  return applyTargetedGeneration(categories);
 }
 
 function chooseWeightedCategory(categories) {
