@@ -663,3 +663,80 @@ select:focus-visible {
     animation-iteration-count: 1 !important;
   }
 }
+
+.settings-section-title {
+  color: var(--muted);
+  font-size: 11px;
+  margin: 0;
+}
+
+.category-toggles-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.category-toggle-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.category-toggle-item input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  accent-color: #eee;
+  cursor: pointer;
+}
+
+.select-buttons-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.select-buttons-row .button {
+  min-height: 28px;
+  padding: 0 8px;
+  font-size: 11px;
+}
+
+.custom-categories-list {
+  display: grid;
+  gap: 6px;
+}
+
+.custom-category-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.custom-category-item__remove {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--dim);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.custom-cat-inputs {
+  display: grid;
+  gap: 8px;
+}
+
+.rounds-hint {
+  margin: -4px 0 0;
+  color: var(--dim);
+  font-size: 11px;
+}
