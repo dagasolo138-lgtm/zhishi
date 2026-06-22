@@ -1,6 +1,6 @@
 import { exportJSON, exportMarkdown } from "./exporter.js";
 import { getFacts } from "./storage.js";
-import { getCurrentTabQuery, initTabs, switchTab } from "./ui-tabs.js";
+import { getCurrentTabQuery, initTabs as initTabsCore, switchTab as switchTabCore } from "./ui-tabs.js";
 import {
   renderEmptyState,
   renderFactCards as renderFactCardsCore
@@ -13,7 +13,41 @@ import {
 
 export { createFactCard, renderEmptyState, renderFactCards } from "./ui-cards.js";
 export { handleGeneratorStatus, setStatus } from "./ui-stats.js";
-export { initTabs, switchTab } from "./ui-tabs.js";
+
+
+
+export function initTabs(categories) {
+  initTabsCore(categories);
+
+  const graphTab = element('.tab-item[data-tab="graph"]');
+
+  if (graphTab?.dataset.graphBound === "true") {
+    return;
+  }
+
+  graphTab?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    switchTab("graph");
+  }, { capture: true });
+  if (graphTab) {
+    graphTab.dataset.graphBound = "true";
+  }
+}
+
+export function switchTab(tabId) {
+  switchTabCore(tabId);
+
+  if (tabId === "graph") {
+    import("./ui-graph.js")
+      .then(({ initGraph }) => initGraph((categoryId) => switchTab(categoryId)))
+      .catch((error) => {
+        const message = error instanceof Error ? error.message : String(error);
+        renderEmptyState(`图谱加载失败：${message}`);
+        setStatus(`图谱加载失败：${message}`, "error");
+      });
+  }
+}
 
 const CATEGORIES_URL = new URL("../data/categories.json", import.meta.url);
 const CUSTOM_CATEGORIES_KEY = "zhishi_custom_categories";
