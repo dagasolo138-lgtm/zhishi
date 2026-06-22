@@ -1,0 +1,56 @@
+{
+  "category": "physics",
+  "name": "物理",
+  "facts": [
+    {
+      "fact": "真空中的光速为每秒299792458米。",
+      "subcategory": "基础物理",
+      "source_hint": "基础物理教材"
+    },
+    {
+      "fact": "牛顿第二定律表明合外力等于质量与加速度的乘积。",
+      "subcategory": "基础物理",
+      "source_hint": "基础物理教材"
+    },
+    {
+      "fact": "电流的国际单位是安培，符号为A。",
+      "subcategory": "基础物理",
+      "source_hint": "基础物理教材"
+    },
+    {
+      "fact": "能量守恒定律指出孤立系统的总能量保持不变。",
+      "subcategory": "基础物理",
+      "source_hint": "基础物理教材"
+    },
+    {
+      "fact": "国际单位制中质量的基本单位是千克。",
+      "subcategory": "基础物理",
+      "source_hint": "基础物理教材"
+    },
+    {
+      "fact": "电子带负电荷，质子带正电荷。",
+      "subcategory": "基础物理",
+      "source_hint": "基础物理教材"
+    },
+    {
+      "fact": "声波在空气中传播需要介质。",
+      "subcategory": "基础物理",
+      "source_hint": "基础物理教材"
+    },
+    {
+      "fact": "绝对零度等于0开尔文。",
+      "subcategory": "基础物理",
+      "source_hint": "基础物理教材"
+    },
+    {
+      "fact": "欧姆定律描述电压、电流和电阻之间的关系。",
+      "subcategory": "基础物理",
+      "source_hint": "基础物理教材"
+    },
+    {
+      "fact": "动量等于物体质量与速度的乘积。",
+      "subcategory": "基础物理",
+      "source_hint": "基础物理教材"
+    }
+  ]
+}

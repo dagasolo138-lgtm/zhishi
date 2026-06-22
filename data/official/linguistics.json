@@ -1,0 +1,56 @@
+{
+  "category": "linguistics",
+  "name": "语言学",
+  "facts": [
+    {
+      "fact": "音位是能够区别词义的最小语音单位。",
+      "subcategory": "语言学基础",
+      "source_hint": "语言学教材"
+    },
+    {
+      "fact": "形态学研究词的内部结构和构词规则。",
+      "subcategory": "语言学基础",
+      "source_hint": "语言学教材"
+    },
+    {
+      "fact": "句法学研究词语组合成短语和句子的规则。",
+      "subcategory": "语言学基础",
+      "source_hint": "语言学教材"
+    },
+    {
+      "fact": "语义学研究语言符号所表达的意义。",
+      "subcategory": "语言学基础",
+      "source_hint": "语言学教材"
+    },
+    {
+      "fact": "语音学研究人类语言声音的产生和感知。",
+      "subcategory": "语言学基础",
+      "source_hint": "语言学教材"
+    },
+    {
+      "fact": "语用学研究语言在具体语境中的使用。",
+      "subcategory": "语言学基础",
+      "source_hint": "语言学教材"
+    },
+    {
+      "fact": "国际音标用于统一记录人类语言的语音。",
+      "subcategory": "语言学基础",
+      "source_hint": "语言学教材"
+    },
+    {
+      "fact": "同音词具有相同读音但意义不同。",
+      "subcategory": "语言学基础",
+      "source_hint": "语言学教材"
+    },
+    {
+      "fact": "语言类型学比较不同语言的结构特征。",
+      "subcategory": "语言学基础",
+      "source_hint": "语言学教材"
+    },
+    {
+      "fact": "历史语言学研究语言随时间发生的变化。",
+      "subcategory": "语言学基础",
+      "source_hint": "语言学教材"
+    }
+  ]
+}

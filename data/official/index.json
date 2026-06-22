@@ -1,0 +1,14 @@
+{
+  "files": [
+    "geography.json",
+    "physics.json",
+    "chemistry.json",
+    "biology.json",
+    "history.json",
+    "technology.json",
+    "astronomy.json",
+    "mathematics.json",
+    "linguistics.json"
+  ],
+  "version": 1
+}

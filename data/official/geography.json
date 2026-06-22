@@ -1,0 +1,56 @@
+{
+  "category": "geography",
+  "name": "地理",
+  "facts": [
+    {
+      "fact": "安第斯山脉沿南美洲西岸延伸，是世界最长的大陆山脉。",
+      "subcategory": "自然地理",
+      "source_hint": "通用地理教材"
+    },
+    {
+      "fact": "尼罗河流域的水系最终注入地中海。",
+      "subcategory": "自然地理",
+      "source_hint": "通用地理教材"
+    },
+    {
+      "fact": "太平洋是地球表面积最大的海洋。",
+      "subcategory": "自然地理",
+      "source_hint": "通用地理教材"
+    },
+    {
+      "fact": "撒哈拉沙漠位于非洲北部，横跨多个国家。",
+      "subcategory": "自然地理",
+      "source_hint": "通用地理教材"
+    },
+    {
+      "fact": "珠穆朗玛峰位于喜马拉雅山脉，是世界最高峰。",
+      "subcategory": "自然地理",
+      "source_hint": "通用地理教材"
+    },
+    {
+      "fact": "亚马孙河流域拥有世界面积最大的热带雨林。",
+      "subcategory": "自然地理",
+      "source_hint": "通用地理教材"
+    },
+    {
+      "fact": "格陵兰岛是世界面积最大的岛屿。",
+      "subcategory": "自然地理",
+      "source_hint": "通用地理教材"
+    },
+    {
+      "fact": "苏伊士运河连接地中海和红海。",
+      "subcategory": "自然地理",
+      "source_hint": "通用地理教材"
+    },
+    {
+      "fact": "马里亚纳海沟位于西太平洋，是地球最深海沟。",
+      "subcategory": "自然地理",
+      "source_hint": "通用地理教材"
+    },
+    {
+      "fact": "澳大利亚大陆完全位于南半球和东半球。",
+      "subcategory": "自然地理",
+      "source_hint": "通用地理教材"
+    }
+  ]
+}
