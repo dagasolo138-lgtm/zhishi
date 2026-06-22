@@ -57,7 +57,11 @@ function getSeedFacts(seedData, categories) {
       return;
     }
 
-    const subcategory = category.subcategories?.[0] || "初始事实";
+    const firstSubcategory = category.subcategories?.[0];
+    const subcategory = typeof firstSubcategory === "string"
+      ? firstSubcategory
+      : firstSubcategory?.name || "初始事实";
+    const leaf = Array.isArray(firstSubcategory?.leaves) ? firstSubcategory.leaves[0] || "" : "";
     const sourceHint = SEED_SOURCE_HINTS[categoryId] || "项目内置种子事实";
 
     facts.forEach((factText) => {
@@ -68,6 +72,7 @@ function getSeedFacts(seedData, categories) {
       seedFacts.push({
         category: categoryId,
         subcategory,
+        leaf,
         fact: factText.trim(),
         source_hint: sourceHint,
         timestamp: baseTimestamp + sequence

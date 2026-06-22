@@ -1,6 +1,6 @@
 import { hasConfiguredApiKey, streamGenerate } from "./api.js";
 import { buildPrompt } from "./prompt.js";
-import { getRecentFacts, saveFact } from "./storage.js";
+import { getRecentKeywords, saveFact } from "./storage.js";
 import { validate } from "./validator.js";
 
 const CATEGORIES_URL = new URL("../data/categories.json", import.meta.url);
@@ -72,6 +72,21 @@ function createNoEnabledCategoriesError() {
   return error;
 }
 
+
+function getSubcategoryName(item) {
+  if (typeof item === "string") {
+    return item.trim();
+  }
+
+  return item && typeof item === "object" && typeof item.name === "string" ? item.name.trim() : "";
+}
+
+function getSubcategoryLeaves(item) {
+  return item && typeof item === "object" && Array.isArray(item.leaves)
+    ? item.leaves.filter((leaf) => typeof leaf === "string" && leaf.trim())
+    : [];
+}
+
 function isUsableCategory(category) {
   return Boolean(
     category
@@ -81,7 +96,7 @@ function isUsableCategory(category) {
     && typeof category.name === "string"
     && category.name.trim()
     && Array.isArray(category.subcategories)
-    && category.subcategories.some((item) => typeof item === "string" && item.trim())
+    && category.subcategories.some((item) => getSubcategoryName(item))
     && Array.isArray(category.keywords)
     && category.keywords.some((item) => typeof item === "string" && item.trim())
   );
@@ -163,23 +178,33 @@ function cancelWait() {
   }
 }
 
-function getUsableFacts(validFacts, category, recentFacts) {
-  const knownFacts = new Set(
-    recentFacts.map((item) => normalizeFactText(item.fact)).filter(Boolean)
-  );
+function getUsableFacts(validFacts, category) {
+  const knownFacts = new Set();
   const allowedSubcategories = new Set(
     Array.isArray(category.subcategories)
-      ? category.subcategories.filter((item) => typeof item === "string" && item.trim())
+      ? category.subcategories.map(getSubcategoryName).filter(Boolean)
+      : []
+  );
+
+  const allowedLeavesBySubcategory = new Map(
+    Array.isArray(category.subcategories)
+      ? category.subcategories
+          .map((item) => [getSubcategoryName(item), new Set(getSubcategoryLeaves(item))])
+          .filter(([name]) => name)
       : []
   );
 
   return validFacts.filter((fact) => {
     const normalizedFact = normalizeFactText(fact.fact);
 
+    const allowedLeaves = allowedLeavesBySubcategory.get(fact.subcategory) || new Set();
+    const hasInvalidLeaf = fact.leaf && allowedLeaves.size > 0 && !allowedLeaves.has(fact.leaf);
+
     if (
       !normalizedFact
       || fact.category !== category.id
       || !allowedSubcategories.has(fact.subcategory)
+      || hasInvalidLeaf
       || knownFacts.has(normalizedFact)
     ) {
       return false;
@@ -194,16 +219,18 @@ function makeStoredFact(fact, categoryId) {
   return {
     category: categoryId,
     subcategory: fact.subcategory,
+    leaf: fact.leaf,
     fact: fact.fact,
-    source_hint: fact.source_hint
+    source_hint: fact.source_hint,
+    quality_score: fact.quality_score
   };
 }
 
 async function runRound() {
   const categories = await loadCategories();
   const category = chooseWeightedCategory(categories);
-  const recentFacts = await getRecentFacts(20, category.id);
-  const { systemPrompt, userPrompt } = buildPrompt(category, recentFacts);
+  const recentKeywords = await getRecentKeywords(20, category.id);
+  const { systemPrompt, userPrompt } = buildPrompt(category, recentKeywords);
   let receivedLength = 0;
 
   emitStatus("generating", {
@@ -227,7 +254,7 @@ async function runRound() {
   });
 
   const { valid, invalid } = validate(rawText);
-  const usableFacts = getUsableFacts(valid, category, recentFacts);
+  const usableFacts = getUsableFacts(valid, category);
   let savedCount = 0;
 
   for (const fact of usableFacts) {

@@ -1,4 +1,4 @@
-const REQUIRED_FIELDS = ["category", "subcategory", "fact", "source_hint"];
+const REQUIRED_FIELDS = ["category", "subcategory", "fact", "source_hint", "quality_score"];
 const AMBIGUOUS_TERMS = [
   "可能",
   "大约",
@@ -48,6 +48,11 @@ function countContentCharacters(value) {
   return value.replace(/\s/g, "").length;
 }
 
+function normalizeQualityScore(value) {
+  const score = Number(value);
+  return Number.isInteger(score) ? score : NaN;
+}
+
 function validateItem(item, index) {
   const reasons = [];
 
@@ -66,14 +71,29 @@ function validateItem(item, index) {
     ...item,
     category: text(item.category),
     subcategory: text(item.subcategory),
+    leaf: text(item.leaf),
     fact: text(item.fact),
-    source_hint: text(item.source_hint)
+    source_hint: text(item.source_hint),
+    quality_score: normalizeQualityScore(item.quality_score)
   };
 
   for (const field of REQUIRED_FIELDS) {
+    if (field === "quality_score") {
+      if (!Object.prototype.hasOwnProperty.call(item, field)) {
+        reasons.push(`缺少或为空的字段：${field}`);
+      }
+      continue;
+    }
+
     if (!normalized[field]) {
       reasons.push(`缺少或为空的字段：${field}`);
     }
+  }
+
+  if (!Number.isInteger(normalized.quality_score) || normalized.quality_score < 1 || normalized.quality_score > 10) {
+    reasons.push("quality_score 必须是 1-10 的整数。");
+  } else if (normalized.quality_score < 5) {
+    reasons.push("quality_score 小于 5，事实质量不足。");
   }
 
   if (normalized.fact) {
