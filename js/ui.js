@@ -136,10 +136,21 @@ export async function refreshFacts(query = {}) {
     : current.keyword;
 
   try {
-    const [personalFacts, officialFacts] = await Promise.all([
+    const [personalFactsResult, officialFactsResult] = await Promise.allSettled([
       getFacts({ limit: Infinity }),
       loadOfficialFacts()
     ]);
+
+    if (personalFactsResult.status === "rejected") {
+      throw personalFactsResult.reason;
+    }
+
+    const personalFacts = personalFactsResult.value;
+    const officialFacts = officialFactsResult.status === "fulfilled" ? officialFactsResult.value : [];
+
+    if (officialFactsResult.status === "rejected") {
+      console.warn("官方知识库加载失败，已降级为仅展示个人知识库。", officialFactsResult.reason);
+    }
     const facts = filterFacts([...personalFacts, ...officialFacts], { category, keyword })
       .sort((left, right) => Number(right.timestamp || 0) - Number(left.timestamp || 0))
       .slice(0, FACTS_RENDER_LIMIT);
@@ -243,6 +254,9 @@ async function runExport(button, action, successMessage) {
 export function renderExportButtons() {
   const jsonButton = requiredElement("#export-json");
   const markdownButton = requiredElement("#export-markdown");
+
+  jsonButton.textContent = "导出个人 JSON";
+  markdownButton.textContent = "导出个人 Markdown";
 
   if (jsonButton.dataset.bound !== "true") {
     jsonButton.addEventListener("click", () => {

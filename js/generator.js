@@ -81,6 +81,20 @@ function getTargetedSubcategoryName(item) {
   return typeof item === "string" ? item.trim() : item?.name?.trim() || "";
 }
 
+function applyEnabledCategories(categories) {
+  const { enabledCategories } = loadSettings();
+
+  if (enabledCategories === null) {
+    return categories;
+  }
+
+  const enabledCategoryIds = new Set(enabledCategories);
+
+  return categories.map((category) => (
+    enabledCategoryIds.has(category?.id) ? category : { ...category, weight: 0 }
+  ));
+}
+
 function applyTargetedGeneration(categories) {
   const { targetedGeneration } = loadSettings();
 
@@ -112,7 +126,8 @@ function applyTargetedGeneration(categories) {
 
 async function loadCategories() {
   const categories = await loadBaseCategories();
-  return applyTargetedGeneration(categories);
+  const enabledCategories = applyEnabledCategories(categories);
+  return applyTargetedGeneration(enabledCategories);
 }
 
 function chooseWeightedCategory(categories) {

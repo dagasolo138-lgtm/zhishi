@@ -473,7 +473,6 @@ export function renderSettingsPanel() {
 
     try {
       await clearAll();
-      localStorage.removeItem("zhishi_seed_initialized");
       emit("facts:cleared", { timestamp: Date.now() });
       setFeedback(feedback, "知识库已清空。", "success");
     } catch (error) {

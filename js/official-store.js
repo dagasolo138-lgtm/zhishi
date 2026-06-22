@@ -28,24 +28,37 @@ function normalizeOfficialFact(fact, category, index, timestamp) {
 
 async function readOfficialFacts() {
   const timestamp = Date.now();
-  const indexData = await fetchJSON(OFFICIAL_INDEX_URL, "官方知识库索引");
+  let indexData;
+
+  try {
+    indexData = await fetchJSON(OFFICIAL_INDEX_URL, "官方知识库索引");
+  } catch (error) {
+    console.warn("官方知识库索引加载失败，已降级为空官方知识库。", error);
+    return [];
+  }
 
   if (!Array.isArray(indexData.files)) {
-    throw new Error("官方知识库索引格式错误。");
+    console.warn("官方知识库索引格式错误，已降级为空官方知识库。", indexData);
+    return [];
   }
 
   const fileFacts = await Promise.all(indexData.files.map(async (fileName) => {
-    const fileUrl = new URL(fileName, OFFICIAL_INDEX_URL);
-    const fileData = await fetchJSON(fileUrl, `官方知识库文件 ${fileName}`);
-    const category = typeof fileData.category === "string" ? fileData.category.trim() : "";
+    try {
+      const fileUrl = new URL(fileName, OFFICIAL_INDEX_URL);
+      const fileData = await fetchJSON(fileUrl, `官方知识库文件 ${fileName}`);
+      const category = typeof fileData.category === "string" ? fileData.category.trim() : "";
 
-    if (!category || !Array.isArray(fileData.facts)) {
+      if (!category || !Array.isArray(fileData.facts)) {
+        return [];
+      }
+
+      return fileData.facts
+        .map((fact, index) => normalizeOfficialFact(fact, category, index, timestamp))
+        .filter((fact) => fact.fact && fact.category && fact.subcategory && fact.source_hint);
+    } catch (error) {
+      console.warn(`官方知识库文件 ${fileName} 加载失败，已跳过。`, error);
       return [];
     }
-
-    return fileData.facts
-      .map((fact, index) => normalizeOfficialFact(fact, category, index, timestamp))
-      .filter((fact) => fact.fact && fact.category && fact.subcategory && fact.source_hint);
   }));
 
   return fileFacts.flat();
@@ -53,7 +66,10 @@ async function readOfficialFacts() {
 
 export function loadOfficialFacts() {
   if (!officialFactsCache) {
-    officialFactsCache = readOfficialFacts();
+    officialFactsCache = readOfficialFacts().catch((error) => {
+      console.warn("官方知识库加载失败，已降级为空官方知识库。", error);
+      return [];
+    });
   }
 
   return officialFactsCache;

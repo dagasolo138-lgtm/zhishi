@@ -243,6 +243,71 @@ function keepUpgradeTransactionAlive(store, isDone) {
   ping();
 }
 
+function compareFactTimestamp(left, right) {
+  const leftTimestamp = Number.isFinite(Number(left?.timestamp)) ? Number(left.timestamp) : 0;
+  const rightTimestamp = Number.isFinite(Number(right?.timestamp)) ? Number(right.timestamp) : 0;
+
+  return leftTimestamp - rightTimestamp;
+}
+
+function continueBackfillCursor(cursor) {
+  try {
+    cursor.continue();
+  } catch {
+    // If an async IndexedDB edge case invalidates the cursor, let the upgrade
+    // transaction continue with any already queued requests instead of aborting.
+  }
+}
+
+function resolveBackfillHashConflict(store, cursor, fact, fact_hash) {
+  const index = store.index("fact_hash");
+  const existingRequest = index.get(fact_hash);
+
+  existingRequest.onsuccess = () => {
+    const existingFact = existingRequest.result;
+
+    if (!existingFact) {
+      continueBackfillCursor(cursor);
+      return;
+    }
+
+    const keepCurrentFact = compareFactTimestamp(fact, existingFact) < 0;
+    const deleteKey = keepCurrentFact ? existingFact.id : cursor.primaryKey;
+    const deleteRequest = store.delete(deleteKey);
+
+    deleteRequest.onsuccess = () => {
+      if (!keepCurrentFact) {
+        continueBackfillCursor(cursor);
+        return;
+      }
+
+      const retryRequest = store.put({
+        ...fact,
+        fact_hash
+      });
+
+      retryRequest.onsuccess = () => continueBackfillCursor(cursor);
+      retryRequest.onerror = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        continueBackfillCursor(cursor);
+      };
+    };
+
+    deleteRequest.onerror = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      continueBackfillCursor(cursor);
+    };
+  };
+
+  existingRequest.onerror = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    continueBackfillCursor(cursor);
+  };
+}
+
 function backfillMissingFactHashes(store) {
   let migrationDone = false;
   keepUpgradeTransactionAlive(store, () => migrationDone);
@@ -271,8 +336,15 @@ function backfillMissingFactHashes(store) {
     });
 
     updateRequest.onsuccess = () => cursor.continue();
-    updateRequest.onerror = () => {
-      migrationDone = true;
+    updateRequest.onerror = (event) => {
+      if (updateRequest.error?.name !== "ConstraintError") {
+        migrationDone = true;
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      resolveBackfillHashConflict(store, cursor, fact, fact_hash);
     };
   };
 
