@@ -1,15 +1,13 @@
 import { hasConfiguredApiKey, streamGenerate } from "./api.js";
 import { buildPrompt } from "./prompt.js";
+import { ENABLED_CATEGORIES_KEY, CUSTOM_CATEGORIES_KEY, MAX_ROUNDS_KEY } from "./settings-store.js";
 import { getRecentKeywords, saveFact } from "./storage.js";
+import { loadCategories } from "./ui-tabs.js";
 import { validate } from "./validator.js";
 
-const CATEGORIES_URL = new URL("../data/categories.json", import.meta.url);
 const SUCCESS_DELAY_MS = 3000;
 const FAILURE_DELAY_MS = 10000;
 const USER_ACTION_STATUS_CODES = new Set([401, 402, 403]);
-const ENABLED_CATEGORIES_KEY = "zhishi_enabled_categories";
-const CUSTOM_CATEGORIES_KEY = "zhishi_custom_categories";
-const MAX_ROUNDS_KEY = "zhishi_max_rounds";
 const NO_ENABLED_CATEGORIES_CODE = "NO_ENABLED_CATEGORIES";
 
 let loopActive = false;
@@ -57,15 +55,6 @@ function isNoEnabledCategoriesError(error) {
   return error?.code === NO_ENABLED_CATEGORIES_CODE;
 }
 
-function readJSONStorage(key, fallback) {
-  try {
-    const rawValue = localStorage.getItem(key);
-    return rawValue ? JSON.parse(rawValue) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
 function createNoEnabledCategoriesError() {
   const error = new Error("未启用任何分类，请在设置中至少勾选一个分类。");
   error.code = NO_ENABLED_CATEGORIES_CODE;
@@ -87,21 +76,6 @@ function getSubcategoryLeaves(item) {
     : [];
 }
 
-function isUsableCategory(category) {
-  return Boolean(
-    category
-    && typeof category === "object"
-    && typeof category.id === "string"
-    && category.id.trim()
-    && typeof category.name === "string"
-    && category.name.trim()
-    && Array.isArray(category.subcategories)
-    && category.subcategories.some((item) => getSubcategoryName(item))
-    && Array.isArray(category.keywords)
-    && category.keywords.some((item) => typeof item === "string" && item.trim())
-  );
-}
-
 function chooseWeightedCategory(categories) {
   const validCategories = categories.filter((category) => Number(category.weight) > 0);
   const totalWeight = validCategories.reduce((sum, category) => sum + Number(category.weight), 0);
@@ -120,38 +94,6 @@ function chooseWeightedCategory(categories) {
   }
 
   return validCategories[validCategories.length - 1];
-}
-
-async function loadCategories() {
-  const response = await fetch(CATEGORIES_URL, { cache: "no-store" });
-
-  if (!response.ok) {
-    throw new Error(`无法读取分类配置：${response.status}`);
-  }
-
-  const builtinCategories = await response.json();
-
-  if (!Array.isArray(builtinCategories) || builtinCategories.length === 0) {
-    throw new Error("分类配置必须是非空数组。");
-  }
-
-  const builtinIds = new Set(builtinCategories.map((category) => category.id));
-  const rawCustomCategories = readJSONStorage(CUSTOM_CATEGORIES_KEY, []);
-  const customCategories = (Array.isArray(rawCustomCategories) ? rawCustomCategories : [])
-    .filter(isUsableCategory)
-    .filter((category) => !builtinIds.has(category.id));
-  const enabledCategories = readJSONStorage(ENABLED_CATEGORIES_KEY, null);
-  const allCategories = builtinCategories.concat(customCategories);
-
-  if (!Array.isArray(enabledCategories)) {
-    return allCategories;
-  }
-
-  const enabledSet = new Set(enabledCategories);
-  return allCategories.map((category) => ({
-    ...category,
-    weight: enabledSet.has(category.id) ? category.weight : 0
-  }));
 }
 
 function wait(milliseconds) {

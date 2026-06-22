@@ -1,6 +1,12 @@
 import { exportJSON, exportMarkdown } from "./exporter.js";
+import { CUSTOM_CATEGORIES_KEY } from "./settings-store.js";
 import { getFacts } from "./storage.js";
-import { getCurrentTabQuery, initTabs as initTabsCore, switchTab as switchTabCore } from "./ui-tabs.js";
+import {
+  getCurrentTabQuery,
+  initTabs as initTabsCore,
+  loadCategories,
+  switchTab as switchTabCore
+} from "./ui-tabs.js";
 import {
   renderEmptyState,
   renderFactCards as renderFactCardsCore
@@ -49,10 +55,8 @@ export function switchTab(tabId) {
   }
 }
 
-const CATEGORIES_URL = new URL("../data/categories.json", import.meta.url);
-const CUSTOM_CATEGORIES_KEY = "zhishi_custom_categories";
 const SEARCH_DEBOUNCE_MS = 180;
-const FACTS_RENDER_LIMIT = 300;
+export const FACTS_RENDER_LIMIT = 300;
 
 export const state = {
   initialized: false,
@@ -78,30 +82,8 @@ function requiredElement(selector) {
   return found;
 }
 
-function loadCustomCategories() {
-  try {
-    const rawValue = localStorage.getItem(CUSTOM_CATEGORIES_KEY);
-    const categories = rawValue ? JSON.parse(rawValue) : [];
-    return Array.isArray(categories) ? categories.filter((category) => category && typeof category === "object") : [];
-  } catch {
-    return [];
-  }
-}
-
-async function loadCategories() {
-  const response = await fetch(CATEGORIES_URL, { cache: "no-store" });
-
-  if (!response.ok) {
-    throw new Error(`无法读取分类配置：${response.status}`);
-  }
-
-  const builtinCategories = await response.json();
-
-  if (!Array.isArray(builtinCategories)) {
-    throw new Error("分类配置格式错误。");
-  }
-
-  const categories = builtinCategories.concat(loadCustomCategories());
+async function refreshCategoryState() {
+  const categories = await loadCategories();
   state.categories = categories;
   state.categoryNames = new Map(categories.map((category) => [category.id, category.name]));
   return categories;
@@ -204,7 +186,7 @@ export async function renderFilter() {}
  * Render total facts and per-category counts.
  */
 export async function renderStats() {
-  const categories = await loadCategories();
+  const categories = await refreshCategoryState();
   return renderStatsCore({ categories, categoryNames: state.categoryNames });
 }
 
@@ -259,7 +241,7 @@ export function bindRuntimeEvents() {
   window.addEventListener("settings:changed", () => {
     (async () => {
       try {
-        const categories = await loadCategories();
+        const categories = await refreshCategoryState();
         initTabs(categories);
         switchTab("all");
         await renderStats();
@@ -283,7 +265,7 @@ export async function init() {
     return;
   }
 
-  const categories = await loadCategories();
+  const categories = await refreshCategoryState();
   renderSearch();
   initTabs(categories);
   renderExportButtons();

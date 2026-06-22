@@ -1,42 +1,5 @@
 import { getAllFacts } from "./storage.js";
-
-const CATEGORIES_URL = new URL("../data/categories.json", import.meta.url);
-const CUSTOM_CATEGORIES_KEY = "zhishi_custom_categories";
-
-function loadCustomCategories() {
-  try {
-    const rawValue = localStorage.getItem(CUSTOM_CATEGORIES_KEY);
-    const categories = rawValue ? JSON.parse(rawValue) : [];
-
-    return Array.isArray(categories)
-      ? categories.filter((category) => (
-        category
-        && typeof category === "object"
-        && typeof category.id === "string"
-        && category.id.trim()
-        && typeof category.name === "string"
-        && category.name.trim()
-      ))
-      : [];
-  } catch {
-    return [];
-  }
-}
-
-async function loadCategories() {
-  const response = await fetch(CATEGORIES_URL, { cache: "no-store" });
-
-  if (!response.ok) {
-    throw new Error(`无法读取分类配置：${response.status}`);
-  }
-
-  const builtinCategories = await response.json();
-  const normalizedBuiltinCategories = Array.isArray(builtinCategories) ? builtinCategories : [];
-  const builtinIds = new Set(normalizedBuiltinCategories.map((category) => category?.id));
-  const customCategories = loadCustomCategories().filter((category) => !builtinIds.has(category.id));
-
-  return normalizedBuiltinCategories.concat(customCategories);
-}
+import { loadCategories } from "./ui-tabs.js";
 
 function downloadText(filename, content, mimeType) {
   const blob = new Blob([content], { type: `${mimeType};charset=utf-8` });

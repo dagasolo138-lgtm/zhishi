@@ -22,9 +22,10 @@ zhishi 是一个纯静态 GitHub Pages 应用，无后端服务。
 - `js/prompt.js`：prompt 模板。
 - `js/validator.js`：模型输出校验。
 - `js/ui.js`：主界面入口转发、初始化、搜索、筛选、导出绑定与运行时事件编排。
-- `js/ui-cards.js`：事实卡片渲染与空状态渲染。
-- `js/ui-stats.js`：统计栏、状态栏与生成器状态渲染。
-- `js/ui-tabs.js`：Tab 切换、分类 Tab 与子类筛选逻辑。
+- `js/ui-cards.js`：卡片创建、瀑布流渲染。
+- `js/ui-stats.js`：统计面板、状态指示器。
+- `js/ui-tabs.js`：Tab 切换、子类筛选栏、loadCategories 共享函数。
+- `js/ui-graph.js`：D3.js 知识图谱可视化。
 - `js/exporter.js`：导出功能。
 - `js/api.js`：DeepSeek SSE 调用。
 - `js/app.js`：应用启动、初始化与模块编排。
@@ -47,10 +48,14 @@ zhishi 是一个纯静态 GitHub Pages 应用，无后端服务。
 - 自定义分类。
 - IndexedDB 持久化。
 - 搜索、Tab 分类筛选、子类筛选、导出 JSON/Markdown。
+- Tab 导航 + 子类筛选。
 - 三级分类树（分类 → 子类 → 细分类）。
 - fact 支持 `leaf` 细分类字段与 `quality_score` 质量评分字段。
 - validator 过滤低质量评分、短事实和含模糊词的模型输出。
 - 事实卡片支持点击展开/收起详情，展示来源、细分类、质量评分、生成时间和短条目 ID。
+- 卡片点击展开详情。
+- 知识图谱可视化（D3.js 力导向图）。
+- 生成状态指示器（顶部圆点）。
 - 顶部 Tab 导航支持“全部”、动态分类和“图谱”视图，生成状态显示在顶部品牌区。
 
 ## 5. 注意事项

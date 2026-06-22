@@ -1,8 +1,7 @@
+import { CUSTOM_CATEGORIES_KEY } from "./settings-store.js";
 import { refreshFacts } from "./ui.js";
 
 const CATEGORIES_URL = new URL("../data/categories.json", import.meta.url);
-const CUSTOM_CATEGORIES_KEY = "zhishi_custom_categories";
-
 let categories = [];
 let currentTab = "all";
 let currentSubtab = "";
