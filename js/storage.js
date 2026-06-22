@@ -83,8 +83,8 @@ function factMatchesKeyword(fact, keyword) {
   return haystack.includes(keyword.toLocaleLowerCase());
 }
 
-function sortNewestFirst(left, right) {
-  return right.timestamp - left.timestamp;
+function createCursorError(error, fallback) {
+  return error || new Error(fallback);
 }
 
 /**
@@ -166,6 +166,7 @@ export async function saveFact(fact) {
 
 /**
  * Query facts by category and/or keyword, newest first.
+ * Facts are streamed through the timestamp index and stop once the requested page is filled.
  * @param {object} options
  * @param {string} [options.category]
  * @param {string} [options.keyword]
@@ -180,25 +181,60 @@ export async function getFacts({ category = "", keyword = "", limit = 50, offset
   const normalizedLimit = normalizeLimit(limit);
   const normalizedOffset = normalizeOffset(offset);
 
-  const transaction = database.transaction(FACTS_STORE, "readonly");
-  const store = transaction.objectStore(FACTS_STORE);
-  const source = normalizedCategory ? store.index("category") : store;
-  const request = normalizedCategory
-    ? source.getAll(IDBKeyRange.only(normalizedCategory))
-    : source.getAll();
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction(FACTS_STORE, "readonly");
+    const timestampIndex = transaction.objectStore(FACTS_STORE).index("timestamp");
+    const facts = [];
+    let matchedCount = 0;
+    let settled = false;
 
-  const facts = await requestToPromise(request);
-  await transactionToPromise(transaction);
+    const finish = () => {
+      if (!settled) {
+        settled = true;
+        resolve(facts);
+      }
+    };
 
-  const matchedFacts = facts
-    .filter((fact) => factMatchesKeyword(fact, normalizedKeyword))
-    .sort(sortNewestFirst);
+    const fail = (error, fallback) => {
+      if (!settled) {
+        settled = true;
+        reject(createCursorError(error, fallback));
+      }
+    };
 
-  if (normalizedLimit === Infinity) {
-    return matchedFacts.slice(normalizedOffset);
-  }
+    const request = timestampIndex.openCursor(null, "prev");
 
-  return matchedFacts.slice(normalizedOffset, normalizedOffset + normalizedLimit);
+    request.onsuccess = () => {
+      const cursor = request.result;
+
+      if (!cursor) {
+        finish();
+        return;
+      }
+
+      const fact = cursor.value;
+      const matchesCategory = !normalizedCategory || fact.category === normalizedCategory;
+
+      if (matchesCategory && factMatchesKeyword(fact, normalizedKeyword)) {
+        if (matchedCount >= normalizedOffset) {
+          facts.push(fact);
+        }
+
+        matchedCount += 1;
+
+        if (normalizedLimit !== Infinity && facts.length >= normalizedLimit) {
+          finish();
+          return;
+        }
+      }
+
+      cursor.continue();
+    };
+
+    request.onerror = () => fail(request.error, "Unable to read facts.");
+    transaction.onerror = () => fail(transaction.error, "Unable to read facts.");
+    transaction.onabort = () => fail(transaction.error, "Fact query was aborted.");
+  });
 }
 
 /**
@@ -207,6 +243,56 @@ export async function getFacts({ category = "", keyword = "", limit = 50, offset
  */
 export function getAllFacts() {
   return getFacts({ limit: Infinity });
+}
+
+/**
+ * Count all facts and their categories without materializing the whole knowledge base.
+ * @returns {Promise<{total: number, counts: Map<string, number>}>}
+ */
+export async function getFactStats() {
+  const database = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction(FACTS_STORE, "readonly");
+    const store = transaction.objectStore(FACTS_STORE);
+    const counts = new Map();
+    let total = 0;
+    let settled = false;
+
+    const finish = () => {
+      if (!settled) {
+        settled = true;
+        resolve({ total, counts });
+      }
+    };
+
+    const fail = (error, fallback) => {
+      if (!settled) {
+        settled = true;
+        reject(createCursorError(error, fallback));
+      }
+    };
+
+    const request = store.openCursor();
+
+    request.onsuccess = () => {
+      const cursor = request.result;
+
+      if (!cursor) {
+        finish();
+        return;
+      }
+
+      const categoryId = normalizeText(cursor.value.category) || "uncategorized";
+      total += 1;
+      counts.set(categoryId, (counts.get(categoryId) || 0) + 1);
+      cursor.continue();
+    };
+
+    request.onerror = () => fail(request.error, "Unable to calculate fact statistics.");
+    transaction.onerror = () => fail(transaction.error, "Unable to calculate fact statistics.");
+    transaction.onabort = () => fail(transaction.error, "Fact statistics transaction was aborted.");
+  });
 }
 
 /**
