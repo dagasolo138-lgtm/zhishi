@@ -41,9 +41,12 @@ function normalizeMaxRounds(value) {
   return Math.max(0, parseInt(value, 10) || 0);
 }
 
-function refreshRoundSettings(value = localStorage.getItem(MAX_ROUNDS_KEY)) {
+function refreshRoundSettings(value = localStorage.getItem(MAX_ROUNDS_KEY), resetCompleted = false) {
   maxRounds = normalizeMaxRounds(value);
-  roundsCompleted = 0;
+
+  if (resetCompleted) {
+    roundsCompleted = 0;
+  }
 }
 
 function needsUserAction(error) {
@@ -341,7 +344,7 @@ export function start() {
     return;
   }
 
-  refreshRoundSettings();
+  refreshRoundSettings(undefined, true);
   paused = false;
   loopActive = true;
 
