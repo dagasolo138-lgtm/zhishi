@@ -1,5 +1,5 @@
 const DB_NAME = "zhishi-db";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const FACTS_STORE = "facts";
 
 let dbPromise = null;
@@ -45,6 +45,28 @@ const KEYWORD_STOP_WORDS = new Set([
   "因为",
   "所以"
 ]);
+
+const FACT_HASH_STOP_WORDS = [
+  "以及",
+  "的",
+  "了",
+  "是",
+  "在",
+  "和",
+  "与",
+  "或",
+  "等",
+  "也",
+  "都",
+  "这",
+  "那",
+  "有",
+  "为",
+  "被",
+  "对",
+  "从",
+  "其"
+];
 
 function keywordScore(word) {
   const uniqueChars = new Set([...word]).size;
@@ -123,7 +145,28 @@ function normalizeText(value) {
   return typeof value === "string" ? value.trim() : "";
 }
 
-function normalizeFact(fact) {
+function normalizeFactText(value) {
+  const compactText = normalizeText(value)
+    .toLocaleLowerCase()
+    .replace(/[\p{P}\p{S}\s]+/gu, "");
+
+  return FACT_HASH_STOP_WORDS.reduce(
+    (text, stopWord) => text.replaceAll(stopWord, ""),
+    compactText
+  );
+}
+
+async function hashFactText(factText) {
+  const normalizedText = normalizeFactText(factText);
+  const encoder = new TextEncoder();
+  const data = encoder.encode(normalizedText);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 16);
+}
+
+async function normalizeFact(fact) {
   if (!fact || typeof fact !== "object") {
     throw new TypeError("fact must be an object.");
   }
@@ -134,6 +177,7 @@ function normalizeFact(fact) {
     subcategory: normalizeText(fact.subcategory),
     leaf: normalizeText(fact.leaf),
     fact: normalizeText(fact.fact),
+    fact_hash: normalizeText(fact.fact_hash),
     source_hint: normalizeText(fact.source_hint),
     quality_score: Number.isInteger(Number(fact.quality_score)) && Number(fact.quality_score) >= 1 && Number(fact.quality_score) <= 10
       ? Number(fact.quality_score)
@@ -218,6 +262,10 @@ export function initDB() {
       if (!store.indexNames.contains("timestamp")) {
         store.createIndex("timestamp", "timestamp", { unique: false });
       }
+
+      if (request.oldVersion < 2 && !store.indexNames.contains("fact_hash")) {
+        store.createIndex("fact_hash", "fact_hash", { unique: true });
+      }
     };
 
     request.onsuccess = () => {
@@ -247,18 +295,30 @@ export function initDB() {
 /**
  * Save one fact and return the normalized record written to IndexedDB.
  * @param {object} fact
- * @returns {Promise<object>}
+ * @returns {Promise<object|null>}
  */
 export async function saveFact(fact) {
-  const normalizedFact = normalizeFact(fact);
+  const fact_hash = await hashFactText(fact?.fact);
+  const normalizedFact = await normalizeFact({
+    ...fact,
+    fact_hash
+  });
   const database = await initDB();
   const transaction = database.transaction(FACTS_STORE, "readwrite");
   const store = transaction.objectStore(FACTS_STORE);
 
-  store.put(normalizedFact);
-  await transactionToPromise(transaction);
+  try {
+    store.put(normalizedFact);
+    await transactionToPromise(transaction);
 
-  return normalizedFact;
+    return normalizedFact;
+  } catch (error) {
+    if (error?.name === "ConstraintError") {
+      return null;
+    }
+
+    throw error;
+  }
 }
 
 /**

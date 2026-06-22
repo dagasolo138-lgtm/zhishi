@@ -1,29 +1,6 @@
 import { getAllFacts } from "./storage.js";
 import { loadSettings } from "./settings-store.js";
 
-const STOP_WORDS = new Set([
-  "的",
-  "了",
-  "是",
-  "在",
-  "和",
-  "与",
-  "或",
-  "等",
-  "也",
-  "都",
-  "这",
-  "那",
-  "有",
-  "为",
-  "被",
-  "对",
-  "从",
-  "以",
-  "及",
-  "其"
-]);
-
 let activeSimulation = null;
 
 const CATEGORY_COLORS = [
@@ -39,14 +16,6 @@ const CATEGORY_COLORS = [
 
 function normalizeText(value) {
   return typeof value === "string" ? value.trim() : "";
-}
-
-function extractKeywords(text) {
-  return normalizeText(text)
-    .replace(/[\p{P}\p{S}]+/gu, " ")
-    .split(/\s+/u)
-    .map((word) => word.trim())
-    .filter((word) => word.length > 1 && !STOP_WORDS.has(word));
 }
 
 function readCategoryBadgeColor(categoryId) {
@@ -87,30 +56,6 @@ function countFactsBySubcategory(facts, categoryId, subcategoryName) {
   )).length;
 }
 
-function getSubcategoryKeywords(facts, categoryId, subcategoryName) {
-  const keywords = new Set();
-
-  facts
-    .filter((fact) => getFactCategory(fact) === categoryId && getFactSubcategory(fact) === subcategoryName)
-    .forEach((fact) => {
-      extractKeywords(fact.fact).forEach((keyword) => keywords.add(keyword));
-    });
-
-  return keywords;
-}
-
-function getOverlapCount(leftKeywords, rightKeywords) {
-  let count = 0;
-
-  leftKeywords.forEach((keyword) => {
-    if (rightKeywords.has(keyword)) {
-      count += 1;
-    }
-  });
-
-  return count;
-}
-
 function getNodeRadius(node) {
   const [min, max] = node.type === "category" ? [20, 50] : [8, 20];
   const scaled = min + Math.sqrt(Math.max(0, node.count)) * (node.type === "category" ? 4 : 2);
@@ -134,7 +79,6 @@ function mergeCategories(categories, customCategories) {
 function buildGraphData(facts, categories) {
   const nodes = [];
   const links = [];
-  const subcategoryNodes = [];
 
   categories.forEach((category) => {
     const categoryId = normalizeText(category.id);
@@ -163,30 +107,16 @@ function buildGraphData(facts, categories) {
         name: subcategoryName,
         type: "subcategory",
         categoryId,
-        count: countFactsBySubcategory(facts, categoryId, subcategoryName),
-        keywords: getSubcategoryKeywords(facts, categoryId, subcategoryName)
+        count: countFactsBySubcategory(facts, categoryId, subcategoryName)
       };
 
       nodes.push(subcategoryNode);
-      subcategoryNodes.push(subcategoryNode);
       links.push({ source: categoryId, target: subcategoryNode.id, type: "parent", weight: 1 });
     });
   });
 
-  for (let index = 0; index < subcategoryNodes.length; index += 1) {
-    for (let nextIndex = index + 1; nextIndex < subcategoryNodes.length; nextIndex += 1) {
-      const left = subcategoryNodes[index];
-      const right = subcategoryNodes[nextIndex];
-      const weight = getOverlapCount(left.keywords, right.keywords);
-
-      if (weight >= 2) {
-        links.push({ source: left.id, target: right.id, type: "keyword", weight });
-      }
-    }
-  }
-
   return {
-    nodes: nodes.map(({ keywords, ...node }) => node),
+    nodes,
     links
   };
 }
@@ -254,8 +184,8 @@ function renderGraph(graphData, onCategoryClick) {
     .data(graphData.links)
     .join("line")
     .attr("class", "graph-link")
-    .attr("stroke", (item) => (item.type === "parent" ? "var(--line)" : "rgba(255,255,255,0.15)"))
-    .attr("stroke-width", (item) => (item.type === "parent" ? 1 : Math.min(4, Math.max(1, item.weight))));
+    .attr("stroke", "var(--line-strong)")
+    .attr("stroke-width", 1.5);
 
   const node = viewport
     .append("g")
@@ -286,10 +216,10 @@ function renderGraph(graphData, onCategoryClick) {
     .text((item) => item.name);
 
   const simulation = d3Instance.forceSimulation(graphData.nodes)
-    .force("link", d3Instance.forceLink(graphData.links).id((item) => item.id).distance((item) => (item.type === "parent" ? 110 : 170)))
-    .force("charge", d3Instance.forceManyBody().strength(-260))
+    .force("link", d3Instance.forceLink(graphData.links).id((item) => item.id).distance(110))
+    .force("charge", d3Instance.forceManyBody().strength(-180))
     .force("center", d3Instance.forceCenter(width / 2, height / 2))
-    .force("collision", d3Instance.forceCollide().radius((item) => getNodeRadius(item) + 26));
+    .force("collision", d3Instance.forceCollide().radius((item) => getNodeRadius(item) + 20));
 
   activeSimulation = simulation;
   node.call(drag(simulation, d3Instance));

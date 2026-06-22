@@ -205,8 +205,11 @@ async function runRound() {
     }
 
     const savedFact = await saveFact(makeStoredFact(fact, category.id));
-    savedCount += 1;
-    emit("fact:new", savedFact);
+
+    if (savedFact) {
+      savedCount += 1;
+      emit("fact:new", savedFact);
+    }
   }
 
   emitStatus("completed", {
