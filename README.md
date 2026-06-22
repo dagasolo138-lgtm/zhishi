@@ -41,7 +41,7 @@ python3 -m http.server 8080
 http://localhost:8080
 ```
 
-首次打开时，应用会向 IndexedDB 写入内置种子事实。之后在右上角“设置”中填写 DeepSeek API Key，并开启“自动生成”。
+首次打开时，应用会向 IndexedDB 写入内置种子事实。之后在右上角“设置”中填写 DeepSeek API Key，并开启“自动生成”。使用“清空知识库”后，刷新页面不会再次自动写入种子事实；清除整个站点数据后，应用会回到首次初始化状态。
 
 ## API Key 与安全边界
 
