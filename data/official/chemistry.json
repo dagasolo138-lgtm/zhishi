@@ -1,0 +1,56 @@
+{
+  "category": "chemistry",
+  "name": "化学",
+  "facts": [
+    {
+      "fact": "水分子由两个氢原子和一个氧原子组成。",
+      "subcategory": "基础化学",
+      "source_hint": "基础化学教材"
+    },
+    {
+      "fact": "元素周期表按原子序数递增排列化学元素。",
+      "subcategory": "基础化学",
+      "source_hint": "基础化学教材"
+    },
+    {
+      "fact": "酸与碱发生中和反应时通常生成盐和水。",
+      "subcategory": "基础化学",
+      "source_hint": "基础化学教材"
+    },
+    {
+      "fact": "金刚石和石墨都由碳元素构成，但原子排列方式不同。",
+      "subcategory": "基础化学",
+      "source_hint": "基础化学教材"
+    },
+    {
+      "fact": "氢元素的原子序数为1。",
+      "subcategory": "基础化学",
+      "source_hint": "基础化学教材"
+    },
+    {
+      "fact": "氧气分子由两个氧原子组成，化学式为O2。",
+      "subcategory": "基础化学",
+      "source_hint": "基础化学教材"
+    },
+    {
+      "fact": "氯化钠由钠离子和氯离子形成离子晶体。",
+      "subcategory": "基础化学",
+      "source_hint": "基础化学教材"
+    },
+    {
+      "fact": "pH值小于7的水溶液呈酸性。",
+      "subcategory": "基础化学",
+      "source_hint": "基础化学教材"
+    },
+    {
+      "fact": "铁在潮湿空气中会与氧气反应生成铁锈。",
+      "subcategory": "基础化学",
+      "source_hint": "基础化学教材"
+    },
+    {
+      "fact": "甲烷的分子式为CH4，是最简单的烷烃。",
+      "subcategory": "基础化学",
+      "source_hint": "基础化学教材"
+    }
+  ]
+}

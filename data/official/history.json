@@ -1,0 +1,56 @@
+{
+  "category": "history",
+  "name": "历史",
+  "facts": [
+    {
+      "fact": "秦朝于公元前221年完成中国历史上的首次大一统。",
+      "subcategory": "通用历史",
+      "source_hint": "通用历史资料"
+    },
+    {
+      "fact": "古腾堡在十五世纪中叶改进了欧洲的活字印刷技术。",
+      "subcategory": "通用历史",
+      "source_hint": "通用历史资料"
+    },
+    {
+      "fact": "工业革命首先在十八世纪的英国形成规模化发展。",
+      "subcategory": "通用历史",
+      "source_hint": "通用历史资料"
+    },
+    {
+      "fact": "联合国于1945年10月24日正式成立。",
+      "subcategory": "通用历史",
+      "source_hint": "通用历史资料"
+    },
+    {
+      "fact": "汉谟拉比法典刻写在黑色玄武岩石柱上。",
+      "subcategory": "通用历史",
+      "source_hint": "通用历史资料"
+    },
+    {
+      "fact": "罗马帝国西部政权于公元476年灭亡。",
+      "subcategory": "通用历史",
+      "source_hint": "通用历史资料"
+    },
+    {
+      "fact": "美国独立宣言于1776年7月4日通过。",
+      "subcategory": "通用历史",
+      "source_hint": "通用历史资料"
+    },
+    {
+      "fact": "法国大革命始于1789年。",
+      "subcategory": "通用历史",
+      "source_hint": "通用历史资料"
+    },
+    {
+      "fact": "第一次世界大战于1914年爆发。",
+      "subcategory": "通用历史",
+      "source_hint": "通用历史资料"
+    },
+    {
+      "fact": "中国共产党于1921年在上海成立。",
+      "subcategory": "通用历史",
+      "source_hint": "通用历史资料"
+    }
+  ]
+}

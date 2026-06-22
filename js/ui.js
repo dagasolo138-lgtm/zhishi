@@ -1,4 +1,5 @@
 import { exportJSON, exportMarkdown } from "./exporter.js";
+import { loadOfficialFacts } from "./official-store.js";
 import { CUSTOM_CATEGORIES_KEY } from "./settings-store.js";
 import { getFacts } from "./storage.js";
 import {
@@ -101,6 +102,31 @@ function currentQuery() {
   };
 }
 
+function factMatchesKeyword(fact, keyword) {
+  if (!keyword) {
+    return true;
+  }
+
+  const haystack = [
+    fact.fact,
+    fact.category,
+    fact.subcategory,
+    fact.leaf,
+    fact.source_hint
+  ]
+    .join(" ")
+    .toLocaleLowerCase();
+
+  return haystack.includes(keyword.toLocaleLowerCase());
+}
+
+function filterFacts(facts, { category = "", keyword = "" } = {}) {
+  return facts.filter((fact) => {
+    const matchesCategory = !category || fact.category === category;
+    return matchesCategory && factMatchesKeyword(fact, keyword);
+  });
+}
+
 export async function refreshFacts(query = {}) {
   const requestId = ++state.refreshSequence;
   const current = currentQuery();
@@ -110,7 +136,13 @@ export async function refreshFacts(query = {}) {
     : current.keyword;
 
   try {
-    const facts = await getFacts({ category, keyword, limit: FACTS_RENDER_LIMIT });
+    const [personalFacts, officialFacts] = await Promise.all([
+      getFacts({ limit: Infinity }),
+      loadOfficialFacts()
+    ]);
+    const facts = filterFacts([...personalFacts, ...officialFacts], { category, keyword })
+      .sort((left, right) => Number(right.timestamp || 0) - Number(left.timestamp || 0))
+      .slice(0, FACTS_RENDER_LIMIT);
 
     if (requestId !== state.refreshSequence) {
       return;

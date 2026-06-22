@@ -1,3 +1,4 @@
+import { initBackendStore } from "./backend-store.js";
 import { pause, start } from "./generator.js";
 import { loadSettings, renderSettingsPanel } from "./settings.js";
 import { countFacts, initDB, saveFact } from "./storage.js";
@@ -120,6 +121,7 @@ async function seedFactsIfNeeded() {
 
 async function bootstrap() {
   await initDB();
+  await initBackendStore();
 
   const settings = loadSettings();
   renderSettingsPanel();

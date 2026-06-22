@@ -1,0 +1,56 @@
+{
+  "category": "technology",
+  "name": "技术",
+  "facts": [
+    {
+      "fact": "CPU通过执行指令完成计算机中的算术和逻辑运算。",
+      "subcategory": "计算机与工程",
+      "source_hint": "计算机与工程教材"
+    },
+    {
+      "fact": "TCP协议通过确认和重传机制提供可靠的数据传输。",
+      "subcategory": "计算机与工程",
+      "source_hint": "计算机与工程教材"
+    },
+    {
+      "fact": "晶体管可用较小的电信号控制较大的电流。",
+      "subcategory": "计算机与工程",
+      "source_hint": "计算机与工程教材"
+    },
+    {
+      "fact": "机器学习系统通过数据训练调整模型参数。",
+      "subcategory": "计算机与工程",
+      "source_hint": "计算机与工程教材"
+    },
+    {
+      "fact": "半导体集成电路将多个电子元件集成在芯片上。",
+      "subcategory": "计算机与工程",
+      "source_hint": "计算机与工程教材"
+    },
+    {
+      "fact": "HTTP协议用于万维网上客户端与服务器通信。",
+      "subcategory": "计算机与工程",
+      "source_hint": "计算机与工程教材"
+    },
+    {
+      "fact": "二维码通过黑白矩阵图形存储机器可读信息。",
+      "subcategory": "计算机与工程",
+      "source_hint": "计算机与工程教材"
+    },
+    {
+      "fact": "锂离子电池通过锂离子在电极间移动充放电。",
+      "subcategory": "计算机与工程",
+      "source_hint": "计算机与工程教材"
+    },
+    {
+      "fact": "GPS系统利用卫星信号提供定位和授时服务。",
+      "subcategory": "计算机与工程",
+      "source_hint": "计算机与工程教材"
+    },
+    {
+      "fact": "光纤通过全反射传输光信号。",
+      "subcategory": "计算机与工程",
+      "source_hint": "计算机与工程教材"
+    }
+  ]
+}

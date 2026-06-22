@@ -67,6 +67,9 @@ export function createFactCard(fact, { categoryNames = new Map() } = {}) {
     categoryName(fact.category, categoryNames)
   );
   const subcategory = createTextElement("span", "fact-card__subcategory", fact.subcategory || "未分类");
+  const officialBadge = fact.source_type === "official"
+    ? createTextElement("span", "fact-card__official-badge", "📮")
+    : null;
 
   if (fact.leaf) {
     subcategory.append(
@@ -101,8 +104,12 @@ export function createFactCard(fact, { categoryNames = new Map() } = {}) {
     time.dateTime = timestampDate.toISOString();
   }
 
+  if (officialBadge) {
+    officialBadge.title = "官方知识库";
+  }
+
   header.className = "fact-card__header";
-  header.append(categoryBadge, subcategory);
+  header.append(...[categoryBadge, subcategory, officialBadge].filter(Boolean));
 
   footer.className = "fact-card__footer";
   footer.append(...[source, score, time].filter(Boolean));

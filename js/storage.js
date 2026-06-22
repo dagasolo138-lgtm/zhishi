@@ -1,6 +1,7 @@
 const DB_NAME = "zhishi-db";
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 const FACTS_STORE = "facts";
+const BACKEND_FACTS_STORE = "backend_facts";
 
 let dbPromise = null;
 
@@ -321,6 +322,22 @@ export function initDB() {
 
       if (request.oldVersion < 3) {
         backfillMissingFactHashes(store);
+      }
+
+      if (!database.objectStoreNames.contains(BACKEND_FACTS_STORE)) {
+        const backendStore = database.createObjectStore(BACKEND_FACTS_STORE, { keyPath: "id" });
+        backendStore.createIndex("category", "category", { unique: false });
+        backendStore.createIndex("timestamp", "timestamp", { unique: false });
+      } else {
+        const backendStore = request.transaction.objectStore(BACKEND_FACTS_STORE);
+
+        if (!backendStore.indexNames.contains("category")) {
+          backendStore.createIndex("category", "category", { unique: false });
+        }
+
+        if (!backendStore.indexNames.contains("timestamp")) {
+          backendStore.createIndex("timestamp", "timestamp", { unique: false });
+        }
       }
     };
 
