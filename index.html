@@ -17,18 +17,17 @@
         </div>
 
         <div class="toolbar" aria-label="知识库工具">
-          <label class="search-control" for="search-input">
-            <span class="sr-only">搜索事实</span>
+          <div class="search-control">
             <input
               id="search-input"
               type="search"
               placeholder="搜索事实、来源或子分类"
+              aria-label="搜索事实"
               autocomplete="off"
               spellcheck="false"
             >
-          </label>
+          </div>
 
-          <label class="sr-only" for="category-filter">筛选分类</label>
           <select id="category-filter" aria-label="筛选分类">
             <option value="">全部分类</option>
           </select>
