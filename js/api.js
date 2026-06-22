@@ -10,10 +10,20 @@ function requiredText(value, fieldName) {
   return value.trim();
 }
 
+function readApiKey() {
+  return (localStorage.getItem(API_KEY_STORAGE_KEY) || "").trim();
+}
+
 function callSafely(callback, value) {
   if (typeof callback === "function") {
     callback(value);
   }
+}
+
+function createApiError(message, status) {
+  const error = new Error(message);
+  error.status = status;
+  return error;
 }
 
 async function buildApiError(response) {
@@ -24,13 +34,13 @@ async function buildApiError(response) {
     if (contentType.includes("application/json")) {
       const payload = await response.json();
       const message = payload?.error?.message || payload?.message;
-      return new Error(message || fallback);
+      return createApiError(message || fallback, response.status);
     }
 
     const text = await response.text();
-    return new Error(text.trim() || fallback);
+    return createApiError(text.trim() || fallback, response.status);
   } catch {
-    return new Error(fallback);
+    return createApiError(fallback, response.status);
   }
 }
 
@@ -71,6 +81,14 @@ function parseEventBlock(eventBlock) {
 }
 
 /**
+ * Report whether this browser has a non-empty DeepSeek API Key saved locally.
+ * @returns {boolean}
+ */
+export function hasConfiguredApiKey() {
+  return Boolean(readApiKey());
+}
+
+/**
  * Call DeepSeek Chat Completions through a streaming SSE response.
  * `onChunk` receives each text delta. `onDone` receives the assembled final text.
  * @param {object} options
@@ -91,7 +109,7 @@ export async function streamGenerate({
   try {
     const systemContent = requiredText(systemPrompt, "systemPrompt");
     const userContent = requiredText(userPrompt, "userPrompt");
-    const apiKey = (localStorage.getItem(API_KEY_STORAGE_KEY) || "").trim();
+    const apiKey = readApiKey();
 
     if (!apiKey) {
       throw new Error("未配置 DeepSeek API Key，请先在设置面板保存 API Key。");
