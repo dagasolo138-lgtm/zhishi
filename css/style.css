@@ -740,3 +740,9 @@ select:focus-visible {
   color: var(--dim);
   font-size: 11px;
 }
+
+.settings-panel {
+  max-height: 85vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
