@@ -47,6 +47,7 @@ zhishi 是一个纯静态 GitHub Pages 应用，无后端服务。
 - 分类开关（复选框）。
 - 自定义分类。
 - IndexedDB 持久化，写入时使用事实指纹唯一索引防止重复事实入库。
+- IndexedDB v3 升级时会为缺少 `fact_hash` 的旧事实回填事实指纹。
 - 搜索、Tab 分类筛选、子类筛选、导出 JSON/Markdown。
 - Tab 导航 + 子类筛选。
 - 三级分类树（分类 → 子类 → 细分类）。

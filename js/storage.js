@@ -1,5 +1,5 @@
 const DB_NAME = "zhishi-db";
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const FACTS_STORE = "facts";
 
 let dbPromise = null;
@@ -228,6 +228,58 @@ function createCursorError(error, fallback) {
   return error || new Error(fallback);
 }
 
+function keepUpgradeTransactionAlive(store, isDone) {
+  const ping = () => {
+    if (isDone()) {
+      return;
+    }
+
+    const request = store.count();
+    request.onsuccess = ping;
+    request.onerror = ping;
+  };
+
+  ping();
+}
+
+function backfillMissingFactHashes(store) {
+  let migrationDone = false;
+  keepUpgradeTransactionAlive(store, () => migrationDone);
+
+  const cursorRequest = store.openCursor();
+
+  cursorRequest.onsuccess = async () => {
+    const cursor = cursorRequest.result;
+
+    if (!cursor) {
+      migrationDone = true;
+      return;
+    }
+
+    const fact = cursor.value;
+
+    if (normalizeText(fact.fact_hash)) {
+      cursor.continue();
+      return;
+    }
+
+    const fact_hash = await hashFactText(fact.fact);
+    const updateRequest = store.put({
+      ...fact,
+      fact_hash
+    });
+
+    updateRequest.onsuccess = () => cursor.continue();
+    updateRequest.onerror = () => {
+      migrationDone = true;
+    };
+  };
+
+  cursorRequest.onerror = () => {
+    migrationDone = true;
+  };
+}
+
 /**
  * Open the local knowledge database and create required indexes when needed.
  * @returns {Promise<IDBDatabase>}
@@ -265,6 +317,10 @@ export function initDB() {
 
       if (request.oldVersion < 2 && !store.indexNames.contains("fact_hash")) {
         store.createIndex("fact_hash", "fact_hash", { unique: true });
+      }
+
+      if (request.oldVersion < 3) {
+        backfillMissingFactHashes(store);
       }
     };
 

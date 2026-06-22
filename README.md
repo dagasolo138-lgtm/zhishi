@@ -9,8 +9,11 @@ zhishi 调用用户自行提供的 DeepSeek API，持续生成结构化客观事
 - 纯 HTML、CSS、原生 JavaScript，无框架、无构建工具、无后端。
 - DeepSeek Chat Completions SSE 流式输出。
 - 加权轮换生成 9 个知识分类的客观事实。
-- 对返回结果进行 JSON、必填字段、事实长度和模糊词校验。
-- 使用 IndexedDB 持久化本地事实库。
+- 支持三级分类树（分类 → 子类 → 细分类），事实可记录到 `leaf` 细分类。
+- 顶部 Tab 导航支持“全部”、动态分类与“图谱”视图，并提供子类筛选栏。
+- 知识图谱以分类 → 子类层级图展示，使用本地化的 D3.js 资源渲染力导向图。
+- 对返回结果进行 JSON、必填字段、事实长度、模糊词与质量评分校验；`quality_score` 为 1-10，低于 5 自动过滤。
+- 使用 IndexedDB 持久化本地事实库，并通过 SHA-256 事实指纹 `fact_hash` 唯一索引防止重复事实入库。
 - 支持关键词搜索、分类筛选、分类统计。
 - 支持导出 `zhishi_export.json` 与 `zhishi_export.md`。
 - GitHub Actions 自动将 `main` 根目录发布至 `gh-pages` 分支。
@@ -86,9 +89,13 @@ http://localhost:8080
 │   ├── generator.js          # 加权生成循环、重试、入库
 │   ├── prompt.js             # 结构化事实提示词
 │   ├── settings.js           # API Key、生成开关、清库
-│   ├── storage.js            # IndexedDB 数据层
-│   ├── ui.js                 # 搜索、统计、卡片流、状态展示
-│   └── validator.js          # 生成结果校验
+│   ├── storage.js            # IndexedDB 数据层、事实指纹去重
+│   ├── ui.js                 # 初始化、搜索、筛选、导出绑定
+│   ├── ui-cards.js           # 事实卡片创建与瀑布流渲染
+│   ├── ui-graph.js           # D3.js 知识图谱可视化
+│   ├── ui-stats.js           # 统计面板与生成状态指示器
+│   ├── ui-tabs.js            # Tab 导航、子类筛选、分类加载
+│   └── validator.js          # 生成结果校验与质量评分过滤
 ├── css/
 │   └── style.css             # 深色界面样式
 ├── .github/workflows/
