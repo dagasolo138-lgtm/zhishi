@@ -4,6 +4,98 @@ const FACTS_STORE = "facts";
 
 let dbPromise = null;
 
+const KEYWORD_STOP_WORDS = new Set([
+  "的",
+  "了",
+  "是",
+  "在",
+  "和",
+  "与",
+  "或",
+  "等",
+  "也",
+  "都",
+  "这",
+  "那",
+  "有",
+  "为",
+  "被",
+  "对",
+  "从",
+  "以",
+  "及",
+  "其",
+  "并",
+  "而",
+  "中",
+  "上",
+  "下",
+  "于",
+  "由",
+  "把",
+  "将",
+  "会",
+  "可",
+  "能",
+  "一个",
+  "一种",
+  "这些",
+  "那些",
+  "因此",
+  "因为",
+  "所以"
+]);
+
+function keywordScore(word) {
+  const uniqueChars = new Set([...word]).size;
+  return word.length * 2 + uniqueChars;
+}
+
+function addFallbackKeywords(keywords, normalizedText) {
+  if (keywords.length >= 3) {
+    return keywords;
+  }
+
+  const compactText = normalizedText.replace(/\s+/g, "");
+  const fallbackWords = compactText.match(/[\p{Script=Han}A-Za-z0-9]{2,6}/gu) || [];
+
+  for (const word of fallbackWords) {
+    if (keywords.length >= 3) {
+      break;
+    }
+
+    if (!KEYWORD_STOP_WORDS.has(word) && !keywords.includes(word)) {
+      keywords.push(word);
+    }
+  }
+
+  return keywords;
+}
+
+function extractFactKeywords(factText) {
+  const normalized = normalizeText(factText)
+    .replace(/[\p{P}\p{S}]+/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!normalized) {
+    return "";
+  }
+
+  const singleCharStopWords = [...KEYWORD_STOP_WORDS].filter((word) => word.length === 1).join("");
+  const splitPattern = new RegExp(`[\\s${singleCharStopWords}]+`, "u");
+  const candidates = normalized
+    .split(splitPattern)
+    .map((word) => word.trim())
+    .filter((word) => word.length > 1 && !KEYWORD_STOP_WORDS.has(word));
+  const uniqueCandidates = [...new Set(candidates)]
+    .sort((left, right) => keywordScore(right) - keywordScore(left) || left.localeCompare(right, "zh-CN"));
+
+  return addFallbackKeywords(uniqueCandidates.slice(0, 5), normalized)
+    .slice(0, 5)
+    .join(" ");
+}
+
 function createId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID();
@@ -40,8 +132,12 @@ function normalizeFact(fact) {
     id: normalizeText(fact.id) || createId(),
     category: normalizeText(fact.category),
     subcategory: normalizeText(fact.subcategory),
+    leaf: normalizeText(fact.leaf),
     fact: normalizeText(fact.fact),
     source_hint: normalizeText(fact.source_hint),
+    quality_score: Number.isInteger(Number(fact.quality_score)) && Number(fact.quality_score) >= 1 && Number(fact.quality_score) <= 10
+      ? Number(fact.quality_score)
+      : 5,
     timestamp: Number.isFinite(Number(fact.timestamp)) ? Number(fact.timestamp) : Date.now()
   };
 
@@ -75,6 +171,7 @@ function factMatchesKeyword(fact, keyword) {
     fact.fact,
     fact.category,
     fact.subcategory,
+    fact.leaf,
     fact.source_hint
   ]
     .join(" ")
@@ -370,6 +467,20 @@ export async function getRecentFacts(n = 20, category = "") {
     transaction.onerror = () => reject(transaction.error || new Error("Unable to read recent facts."));
     transaction.onabort = () => reject(transaction.error || new Error("Recent facts transaction was aborted."));
   });
+}
+
+/**
+ * Return compact keyword strings extracted from recent facts for prompt-level duplicate avoidance.
+ * @param {number} n
+ * @param {string} category
+ * @returns {Promise<string>}
+ */
+export async function getRecentKeywords(n = 20, category = "") {
+  const recentFacts = await getRecentFacts(n, category);
+  return recentFacts
+    .map((fact) => extractFactKeywords(fact.fact))
+    .filter(Boolean)
+    .join("；");
 }
 
 /**

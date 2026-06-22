@@ -96,6 +96,16 @@ function createTextElement(tagName, className, text) {
   return node;
 }
 
+function createDetailRow(label, value) {
+  const row = document.createElement("div");
+  const labelNode = createTextElement("span", "fact-card__detail-label", label);
+  const valueNode = createTextElement("span", "fact-card__detail-value", value);
+
+  row.className = "fact-card__detail-row";
+  row.append(labelNode, valueNode);
+  return row;
+}
+
 function createFactCard(fact) {
   const card = document.createElement("article");
   const header = document.createElement("header");
@@ -105,14 +115,35 @@ function createFactCard(fact) {
     categoryName(fact.category)
   );
   const subcategory = createTextElement("span", "fact-card__subcategory", fact.subcategory || "未分类");
+
+  if (fact.leaf) {
+    subcategory.append(
+      document.createTextNode(" › "),
+      createTextElement("span", "fact-card__leaf", fact.leaf)
+    );
+  }
   const body = createTextElement("p", "fact-card__body", fact.fact || "");
   const footer = document.createElement("footer");
+  const detail = document.createElement("div");
   const source = createTextElement("span", "fact-card__source", fact.source_hint || "来源提示缺失");
+  const scoreValue = Number(fact.quality_score);
+  const score = Number.isInteger(scoreValue) && scoreValue >= 5
+    ? createTextElement("span", "fact-card__score", `★ ${scoreValue} / 10`)
+    : null;
   const time = createTextElement("time", "fact-card__time", formatDate(fact.timestamp));
+
+  if (score) {
+    score.dataset.score = scoreValue >= 8 ? "high" : "mid";
+  }
   const timestampDate = parseDate(fact.timestamp);
+  const fullGeneratedTime = timestampDate ? timestampDate.toISOString() : "时间未知";
+  const shortId = fact.id ? String(fact.id).slice(-6) : "未知";
 
   card.className = "fact-card";
   card.dataset.factId = fact.id || "";
+  card.addEventListener("click", () => {
+    card.classList.toggle("fact-card--expanded");
+  });
 
   if (timestampDate) {
     time.dateTime = timestampDate.toISOString();
@@ -122,9 +153,22 @@ function createFactCard(fact) {
   header.append(categoryBadge, subcategory);
 
   footer.className = "fact-card__footer";
-  footer.append(source, time);
+  footer.append(...[source, score, time].filter(Boolean));
 
-  card.append(header, body, footer);
+  detail.className = "fact-card__detail";
+  detail.append(createDetailRow("来源", fact.source_hint || "来源提示缺失"));
+
+  if (fact.leaf) {
+    detail.append(createDetailRow("细分类", fact.leaf));
+  }
+
+  detail.append(
+    createDetailRow("质量评分", Number.isInteger(scoreValue) ? `★ ${scoreValue} / 10` : "未评分"),
+    createDetailRow("生成时间", fullGeneratedTime),
+    createDetailRow("条目 ID", shortId)
+  );
+
+  card.append(header, body, footer, detail);
   return card;
 }
 
