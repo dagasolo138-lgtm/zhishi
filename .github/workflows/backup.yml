@@ -1,0 +1,22 @@
+name: Backup Placeholder
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup-placeholder:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Record backup placeholder trigger
+        run: |
+          echo "Backup workflow triggered for ${GITHUB_REPOSITORY}"
+          echo "Commit: ${GITHUB_SHA}"
+          echo "No remote backup target is configured."
+          echo "Add a storage provider and repository secret before enabling real backups."
