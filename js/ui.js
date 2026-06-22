@@ -3,6 +3,7 @@ import { getAllFacts, getFacts } from "./storage.js";
 
 const CATEGORIES_URL = new URL("../data/categories.json", import.meta.url);
 const SEARCH_DEBOUNCE_MS = 180;
+const FACTS_RENDER_LIMIT = 300;
 
 const state = {
   initialized: false,
@@ -127,6 +128,17 @@ function renderFactCards(facts) {
 
   const fragment = document.createDocumentFragment();
   facts.forEach((fact) => fragment.appendChild(createFactCard(fact)));
+
+  if (facts.length >= FACTS_RENDER_LIMIT) {
+    const limitHint = createTextElement(
+      "p",
+      "facts-limit-hint",
+      "仅显示最新 300 条，导出可获取全量数据"
+    );
+    limitHint.style.cssText = "break-inside: avoid; margin: 4px 0 16px; color: #737373; font-size: 12px; line-height: 1.6;";
+    fragment.appendChild(limitHint);
+  }
+
   grid.replaceChildren(fragment);
 }
 
@@ -162,7 +174,7 @@ async function refreshFacts() {
   const { category, keyword } = currentQuery();
 
   try {
-    const facts = await getFacts({ category, keyword, limit: Infinity });
+    const facts = await getFacts({ category, keyword, limit: FACTS_RENDER_LIMIT });
 
     if (requestId !== state.refreshSequence) {
       return;
